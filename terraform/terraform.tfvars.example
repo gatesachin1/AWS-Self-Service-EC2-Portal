@@ -1,0 +1,20 @@
+# Copy this file to terraform.tfvars and update the values.
+# DO NOT commit terraform.tfvars to version control.
+
+aws_region   = "us-east-1"
+project_name = "ec2-portal"
+environment  = "dev"
+
+# For production, restrict to your frontend domain:
+# allowed_origins = ["https://portal.example.com"]
+allowed_origins = ["*"]
+
+lambda_memory_mb        = 256
+lambda_timeout_seconds  = 30
+log_retention_days      = 14
+
+throttling_burst_limit = 100
+throttling_rate_limit  = 50
+
+# PriceClass_100 = US + Europe (cheapest). PriceClass_200 = + Asia. PriceClass_All = global.
+cloudfront_price_class = "PriceClass_100"

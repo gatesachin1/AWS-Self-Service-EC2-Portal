@@ -1,0 +1,1231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AWS Self-Service EC2 Portal</title>
+<style>
+/* ── Reset ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%;font-size:14px}
+body{height:100%;background:#0D1117;color:#E6EDF3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+button{cursor:pointer;font:inherit;border:none;background:none}
+input,select{font:inherit}
+select{appearance:none}
+
+/* ── Tokens ── */
+:root{
+  --bg:          #0D1117;
+  --surface:     #161B22;
+  --surface2:    #1C2333;
+  --border:      #30363D;
+  --border2:     #21262D;
+  --text:        #E6EDF3;
+  --text-muted:  #8B949E;
+  --text-dim:    #6E7681;
+  --orange:      #FF9900;
+  --orange-dk:   #E68900;
+  --sidebar-bg:  #161B22;
+  --sidebar-w:   220px;
+  --topbar-h:    52px;
+  --radius:      6px;
+  --radius-sm:   4px;
+}
+
+/* ── Layout ── */
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* ── Sidebar ── */
+.sidebar{
+  width:var(--sidebar-w);flex-shrink:0;
+  background:var(--sidebar-bg);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:relative;z-index:20;
+  overflow:hidden;
+}
+.sidebar::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(255,153,0,.06) 0%,transparent 40%);
+  pointer-events:none;
+}
+.sidebar-brand{
+  height:var(--topbar-h);
+  display:flex;align-items:center;gap:10px;
+  padding:0 14px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+  position:relative;
+}
+.brand-icon{
+  width:30px;height:30px;border-radius:6px;
+  background:#FF9900;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.brand-text{font-size:12px;font-weight:600;line-height:1.3;color:var(--text)}
+.brand-text span{color:var(--orange)}
+.sidebar-section-label{
+  font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text-dim);padding:16px 14px 6px;
+}
+.sidebar-nav{flex:1;padding:2px 8px;overflow-y:auto}
+.nav-item{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 10px;border-radius:var(--radius-sm);
+  font-size:13px;font-weight:500;color:var(--text-muted);
+  cursor:pointer;transition:background .12s,color .12s;
+  user-select:none;
+}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--orange);color:#fff}
+.nav-item svg{flex-shrink:0;opacity:.9}
+.sidebar-footer{
+  padding:12px 14px;border-top:1px solid var(--border);
+  font-size:11px;color:var(--text-dim);
+}
+
+/* ── Main ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── Topbar ── */
+.topbar{
+  height:var(--topbar-h);flex-shrink:0;
+  background:var(--sidebar-bg);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;gap:12px;
+}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.hamburger{padding:5px;border-radius:var(--radius-sm);color:var(--text-muted);transition:background .12s,color .12s}
+.hamburger:hover{background:var(--surface2);color:var(--text)}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted)}
+.breadcrumb .accent{color:var(--orange);font-weight:700;font-size:13px}
+.breadcrumb .sep{color:var(--border);font-size:11px}
+.breadcrumb .current{color:var(--text);font-weight:500}
+.topbar-right{display:flex;align-items:center;gap:4px}
+.region-badge{
+  display:flex;align-items:center;gap:6px;
+  padding:4px 10px;border-radius:var(--radius-sm);
+  background:var(--surface2);font-size:11px;color:var(--text-muted);
+  font-family:ui-monospace,'Cascadia Code',monospace;
+  border:1px solid var(--border);
+}
+.region-dot{width:6px;height:6px;border-radius:50%;background:#3FB950;animation:pulse 2s ease infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.topbar-btn{
+  width:32px;height:32px;border-radius:var(--radius-sm);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-muted);transition:background .12s,color .12s;
+  position:relative;
+}
+.topbar-btn:hover{background:var(--surface2);color:var(--text)}
+.notif-dot{
+  position:absolute;top:6px;right:6px;
+  width:5px;height:5px;border-radius:50%;background:var(--orange);
+}
+.profile{
+  display:flex;align-items:center;gap:8px;
+  padding:0 0 0 10px;margin-left:4px;
+  border-left:1px solid var(--border);
+}
+.avatar{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--orange);color:#fff;
+  font-size:11px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.profile-info{line-height:1.2}
+.profile-name{font-size:12px;font-weight:600;color:var(--text)}
+.profile-role{font-size:10px;color:var(--text-dim)}
+
+/* ── Content ── */
+.content{flex:1;overflow-y:auto;padding:20px 24px}
+.page{display:none}
+.page.active{display:block}
+
+/* ── Page header ── */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.page-title{font-size:20px;font-weight:700;color:var(--text)}
+.page-sub{font-size:12px;color:var(--text-muted);margin-top:2px}
+
+/* ── Buttons ── */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:7px 14px;border-radius:var(--radius-sm);
+  font-size:13px;font-weight:600;cursor:pointer;
+  transition:all .12s;user-select:none;
+  border:1px solid transparent;
+}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn-primary{background:var(--orange);color:#fff;border-color:var(--orange)}
+.btn-primary:hover:not(:disabled){background:var(--orange-dk);border-color:var(--orange-dk)}
+.btn-secondary{
+  background:var(--surface2);color:var(--text);
+  border-color:var(--border);
+}
+.btn-secondary:hover:not(:disabled){background:#21262D;border-color:var(--text-muted)}
+.btn-danger{background:#DA3633;color:#fff;border-color:#DA3633;font-size:12px;padding:5px 10px}
+.btn-danger:hover:not(:disabled){background:#B92B28}
+.btn-action{
+  font-size:11px;font-weight:600;padding:4px 9px;
+  background:var(--surface2);color:var(--text-muted);
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  transition:all .12s;
+}
+.btn-action:hover:not(:disabled){color:var(--text);border-color:var(--text-muted)}
+.btn-action:disabled{opacity:.35;cursor:not-allowed}
+.btn-start:hover:not(:disabled){color:#3FB950;border-color:#3FB950;background:rgba(63,185,80,.08)}
+.btn-stop:hover:not(:disabled){color:#D29922;border-color:#D29922;background:rgba(210,153,34,.08)}
+.btn-reboot:hover:not(:disabled){color:#58A6FF;border-color:#58A6FF;background:rgba(88,166,255,.08)}
+
+/* ── Cards ── */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);
+}
+.card-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;border-bottom:1px solid var(--border);
+}
+.card-title{font-size:13px;font-weight:600;color:var(--text)}
+.card-body{padding:16px}
+
+/* ── Stats ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:18px}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 18px;display:flex;align-items:flex-start;justify-content:space-between;
+  transition:border-color .15s,box-shadow .15s;
+}
+.stat-card:hover{border-color:var(--text-dim);box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.stat-label{font-size:11px;color:var(--text-muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+.stat-value{font-size:28px;font-weight:700;color:var(--text);margin-top:4px;font-variant-numeric:tabular-nums}
+.stat-trend{font-size:11px;color:var(--text-dim);margin-top:3px}
+.stat-icon{
+  width:36px;height:36px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.icon-blue{background:rgba(88,166,255,.12);color:#58A6FF}
+.icon-green{background:rgba(63,185,80,.12);color:#3FB950}
+.icon-yellow{background:rgba(210,153,34,.12);color:#D29922}
+.icon-red{background:rgba(218,54,51,.12);color:#F85149}
+
+/* ── Utilisation bar ── */
+.util-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 18px;margin-bottom:18px;
+  display:flex;align-items:center;gap:20px;
+}
+.util-bar-wrap{flex:1}
+.util-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.util-label{font-size:12px;font-weight:500;color:var(--text-muted)}
+.util-count{font-size:12px;font-weight:600;color:var(--text)}
+.util-track{height:6px;background:var(--surface2);border-radius:99px;overflow:hidden;border:1px solid var(--border)}
+.util-fill{height:100%;background:var(--orange);border-radius:99px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.util-legend{display:flex;gap:14px;flex-shrink:0;font-size:11px;color:var(--text-muted)}
+.util-legend span b{color:var(--text)}
+
+/* ── Recent table ── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--surface2);border-bottom:1px solid var(--border)}
+th{
+  padding:8px 14px;text-align:left;
+  font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--text-muted);white-space:nowrap;
+}
+tbody tr{border-bottom:1px solid var(--border2);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surface2)}
+td{padding:9px 14px;font-size:12px;color:var(--text-muted);white-space:nowrap}
+td.name{color:var(--text);font-weight:500}
+td.mono{font-family:ui-monospace,'Cascadia Code',monospace;font-size:11px;color:var(--orange)}
+td.type-mono{font-family:ui-monospace,'Cascadia Code',monospace;font-size:11px}
+
+/* ── Badges ── */
+.badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:2px 8px;border-radius:99px;
+  font-size:11px;font-weight:600;border:1px solid transparent;
+  white-space:nowrap;
+}
+.badge-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.b-running{background:rgba(63,185,80,.12);color:#3FB950;border-color:rgba(63,185,80,.2)}
+.b-running .badge-dot{background:#3FB950}
+.b-stopped{background:rgba(210,153,34,.12);color:#D29922;border-color:rgba(210,153,34,.2)}
+.b-stopped .badge-dot{background:#D29922}
+.b-terminated{background:rgba(218,54,51,.12);color:#F85149;border-color:rgba(218,54,51,.2)}
+.b-terminated .badge-dot{background:#F85149}
+.b-pending{background:rgba(88,166,255,.12);color:#58A6FF;border-color:rgba(88,166,255,.2)}
+.b-pending .badge-dot{background:#58A6FF;animation:pulse 1s ease infinite}
+.env-tag{
+  font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;
+}
+.e-prod{background:rgba(139,92,246,.12);color:#A78BFA}
+.e-staging{background:rgba(88,166,255,.12);color:#58A6FF}
+.e-dev{background:rgba(139,148,158,.12);color:#8B949E}
+.e-shared{background:rgba(45,212,191,.12);color:#2DD4BF}
+
+/* ── Quick actions ── */
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:18px}
+.quick-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;cursor:pointer;transition:border-color .15s,box-shadow .15s;text-align:left;
+}
+.quick-card:hover{border-color:var(--orange);box-shadow:0 0 0 1px rgba(255,153,0,.2)}
+.quick-card:hover .quick-title{color:var(--orange)}
+.quick-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.quick-title{font-size:13px;font-weight:600;color:var(--text);transition:color .12s;margin-bottom:3px}
+.quick-desc{font-size:11px;color:var(--text-dim);line-height:1.5}
+
+/* ── Form ── */
+.form-sections{display:flex;flex-direction:column;gap:16px;max-width:900px}
+.form-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
+.form-section-header{
+  display:flex;align-items:center;gap:9px;
+  padding:12px 16px;border-bottom:1px solid var(--border);
+}
+.form-section-icon{color:var(--orange)}
+.form-section-title{font-size:13px;font-weight:600;color:var(--text)}
+.form-body{padding:16px}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.form-field{display:flex;flex-direction:column;gap:4px}
+.form-label{font-size:12px;font-weight:500;color:var(--text-muted)}
+.form-label .req{color:#F85149;margin-left:2px}
+.form-input{
+  padding:7px 10px;border-radius:var(--radius-sm);
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);font-size:13px;width:100%;
+  transition:border-color .12s,box-shadow .12s;
+  outline:none;
+}
+.form-input::placeholder{color:var(--text-dim)}
+.form-input:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,153,0,.12)}
+.form-input.error{border-color:#F85149;box-shadow:0 0 0 3px rgba(248,81,73,.1)}
+.form-select-wrap{position:relative}
+.form-select-wrap::after{
+  content:'';position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  width:0;height:0;border:4px solid transparent;border-top:5px solid var(--text-muted);
+  pointer-events:none;
+}
+.form-err{font-size:11px;color:#F85149;margin-top:2px;display:flex;align-items:center;gap:4px}
+.checkbox-row{display:flex;align-items:flex-start;gap:10px;grid-column:1/-1}
+.checkbox-row input[type=checkbox]{
+  width:15px;height:15px;margin-top:2px;flex-shrink:0;
+  accent-color:var(--orange);cursor:pointer;
+}
+.checkbox-label{font-size:13px;font-weight:500;color:var(--text)}
+.checkbox-hint{font-size:11px;color:var(--text-muted);margin-top:2px}
+.form-footer{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px 16px;display:flex;align-items:center;justify-content:space-between;
+  gap:12px;flex-wrap:wrap;
+}
+.form-footer-note{font-size:11px;color:var(--text-dim)}
+
+/* ── Manage filters ── */
+.manage-filters{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;
+}
+.search-wrap{position:relative;flex:1;min-width:220px;max-width:340px}
+.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-dim)}
+.search-input{
+  padding:6px 10px 6px 32px;border-radius:var(--radius-sm);
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);font-size:12px;width:100%;outline:none;
+  transition:border-color .12s;
+}
+.search-input:focus{border-color:var(--orange)}
+.search-input::placeholder{color:var(--text-dim)}
+.filter-chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{
+  padding:4px 12px;border-radius:var(--radius-sm);font-size:11px;font-weight:600;
+  border:1px solid var(--border);color:var(--text-muted);background:var(--surface2);
+  cursor:pointer;transition:all .12s;
+}
+.chip:hover{border-color:var(--orange);color:var(--orange)}
+.chip.active{background:var(--orange);border-color:var(--orange);color:#fff}
+
+/* ── Actions column ── */
+.actions{display:flex;align-items:center;gap:5px}
+
+/* ── Table footer ── */
+.table-footer{
+  padding:8px 14px;border-top:1px solid var(--border);
+  background:var(--surface2);border-radius:0 0 var(--radius) var(--radius);
+  display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);
+}
+
+/* ── Toast ── */
+.toast-container{
+  position:fixed;top:16px;right:16px;z-index:1000;
+  display:flex;flex-direction:column;gap:8px;pointer-events:none;
+}
+.toast{
+  min-width:280px;max-width:380px;
+  padding:11px 14px;border-radius:var(--radius);
+  font-size:12px;font-weight:500;line-height:1.5;
+  display:flex;align-items:flex-start;gap:10px;
+  pointer-events:all;
+  animation:toastIn .25s cubic-bezier(.21,1.02,.73,1) forwards;
+  border:1px solid transparent;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+}
+@keyframes toastIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+.toast.out{animation:toastOut .2s ease forwards}
+@keyframes toastOut{to{opacity:0;transform:translateX(24px)}}
+.toast-success{background:#0D4429;border-color:#238636;color:#3FB950}
+.toast-info{background:#0C2D4E;border-color:#1F6FEB;color:#58A6FF}
+.toast-warn{background:#2B1B04;border-color:#9E6A03;color:#D29922}
+.toast-danger{background:#3D0C0B;border-color:#8C1D1B;color:#F85149}
+.toast-icon{flex-shrink:0;margin-top:1px}
+.toast-text{flex:1}
+.toast-title{font-weight:700;margin-bottom:1px}
+.toast-msg{color:inherit;opacity:.8}
+.toast-close{flex-shrink:0;opacity:.6;font-size:16px;line-height:1;cursor:pointer;margin-top:-2px;align-self:flex-start}
+.toast-close:hover{opacity:1}
+
+/* ── Confirm modal ── */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,.65);
+  backdrop-filter:blur(3px);z-index:900;
+  display:flex;align-items:center;justify-content:center;padding:16px;
+}
+.modal{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  width:100%;max-width:420px;padding:20px;
+  animation:modalIn .2s cubic-bezier(.21,1.02,.73,1);
+}
+@keyframes modalIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.modal-header{display:flex;gap:12px;align-items:flex-start;margin-bottom:16px}
+.modal-icon-wrap{
+  width:38px;height:38px;border-radius:8px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.modal-icon-danger{background:rgba(218,54,51,.12);color:#F85149}
+.modal-icon-info{background:rgba(88,166,255,.12);color:#58A6FF}
+.modal-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px}
+.modal-msg{font-size:12px;color:var(--text-muted);line-height:1.6}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+
+/* ── Spinner ── */
+.spinner{
+  width:14px;height:14px;border:2px solid rgba(255,255,255,.25);
+  border-top-color:#fff;border-radius:50%;
+  animation:spin .7s linear infinite;flex-shrink:0;
+}
+.spinner-orange{border-color:rgba(255,153,0,.25);border-top-color:var(--orange)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Manage header stats ── */
+.manage-stats{display:flex;gap:12px;align-items:center;font-size:11px}
+.ms{display:flex;align-items:center;gap:5px;color:var(--text-muted)}
+.ms-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ms-sep{color:var(--border);font-size:13px}
+
+/* ── Empty state ── */
+.empty-state{padding:48px 16px;text-align:center;color:var(--text-dim)}
+.empty-state svg{margin:0 auto 10px;opacity:.3}
+.empty-state p{font-size:13px}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+
+/* ── Focus ── */
+:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="7" rx="1"/><rect x="2" y="14" width="20" height="7" rx="1"/>
+          <line x1="6" y1="6.5" x2="6.01" y2="6.5"/><line x1="6" y1="17.5" x2="6.01" y2="17.5"/>
+        </svg>
+      </div>
+      <div class="brand-text">Self-Service<br><span>EC2 Portal</span></div>
+    </div>
+    <div class="sidebar-section-label">Navigation</div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" data-page="create" onclick="navigate('create')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        Create Instance
+      </div>
+      <div class="nav-item" data-page="manage" onclick="navigate('manage')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="7" rx="1"/><rect x="2" y="14" width="20" height="7" rx="1"/><line x1="6" y1="6.5" x2="6.01" y2="6.5"/><line x1="6" y1="17.5" x2="6.01" y2="17.5"/></svg>
+        Manage Instances
+      </div>
+    </nav>
+    <div class="sidebar-footer">Stage 1 — Frontend Only</div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="topbar-btn hamburger" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="breadcrumb">
+          <span class="accent">AWS</span>
+          <span class="sep">›</span>
+          <span>EC2</span>
+          <span class="sep">›</span>
+          <span class="current" id="breadcrumb-current">Dashboard</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="region-badge">
+          <span class="region-dot"></span>
+          us-east-1
+        </div>
+        <button class="topbar-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">
+          <svg id="theme-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+        </button>
+        <button class="topbar-btn" title="Notifications">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <span class="notif-dot"></span>
+        </button>
+        <div class="profile">
+          <div class="avatar">SG</div>
+          <div class="profile-info">
+            <div class="profile-name">Sachin Gate</div>
+            <div class="profile-role">Administrator</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- ═══════════ DASHBOARD ═══════════ -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Dashboard</div>
+            <div class="page-sub">Overview of your EC2 instances — us-east-1</div>
+          </div>
+          <button class="btn btn-primary" onclick="navigate('create')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Launch Instance
+          </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div>
+              <div class="stat-label">Total Instances</div>
+              <div class="stat-value">8</div>
+              <div class="stat-trend">Across all states</div>
+            </div>
+            <div class="stat-icon icon-blue">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="7" rx="1"/><rect x="2" y="14" width="20" height="7" rx="1"/></svg>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div>
+              <div class="stat-label">Running</div>
+              <div class="stat-value" id="running-count">5</div>
+              <div class="stat-trend">Currently active</div>
+            </div>
+            <div class="stat-icon icon-green">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div>
+              <div class="stat-label">Stopped</div>
+              <div class="stat-value" id="stopped-count">2</div>
+              <div class="stat-trend">Idle instances</div>
+            </div>
+            <div class="stat-icon icon-yellow">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div>
+              <div class="stat-label">Terminated</div>
+              <div class="stat-value" id="terminated-count">1</div>
+              <div class="stat-trend">Permanently removed</div>
+            </div>
+            <div class="stat-icon icon-red">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Utilisation -->
+        <div class="util-card">
+          <div class="util-bar-wrap">
+            <div class="util-meta">
+              <span class="util-label">Instance Utilisation</span>
+              <span class="util-count"><span id="util-running">5</span> / 8 running</span>
+            </div>
+            <div class="util-track">
+              <div class="util-fill" id="util-bar" style="width:62.5%"></div>
+            </div>
+          </div>
+          <div class="util-legend">
+            <span><b style="color:#3FB950">62%</b> running</span>
+            <span><b style="color:#D29922">25%</b> stopped</span>
+          </div>
+        </div>
+
+        <!-- Recent instances -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header">
+            <span class="card-title">Recent Instances</span>
+            <button onclick="navigate('manage')" style="font-size:12px;color:var(--orange);font-weight:600;background:none;border:none;cursor:pointer">View all →</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th><th>Instance ID</th><th>State</th>
+                  <th>Type</th><th>AZ</th><th>Environment</th>
+                </tr>
+              </thead>
+              <tbody id="recent-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="quick-grid">
+          <button class="quick-card" onclick="navigate('create')">
+            <div class="quick-icon icon-green"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+            <div class="quick-title">Launch Instance</div>
+            <div class="quick-desc">Provision a new EC2 instance with custom configuration.</div>
+          </button>
+          <button class="quick-card" onclick="navigate('manage')">
+            <div class="quick-icon icon-blue"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="7" rx="1"/><rect x="2" y="14" width="20" height="7" rx="1"/></svg></div>
+            <div class="quick-title">Manage Instances</div>
+            <div class="quick-desc">Start, stop, reboot, or terminate running instances.</div>
+          </button>
+          <button class="quick-card">
+            <div class="quick-icon" style="background:rgba(255,153,0,.1);color:var(--orange)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg></div>
+            <div class="quick-title">Region: us-east-1</div>
+            <div class="quick-desc">N. Virginia — 3 availability zones available.</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- ═══════════ CREATE INSTANCE ═══════════ -->
+      <div class="page" id="page-create">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Launch EC2 Instance</div>
+            <div class="page-sub">Configure and provision a new EC2 instance in us-east-1.</div>
+          </div>
+        </div>
+
+        <form class="form-sections" id="create-form" onsubmit="submitCreate(event)">
+
+          <!-- Basic config -->
+          <div class="form-section">
+            <div class="form-section-header">
+              <span class="form-section-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg></span>
+              <span class="form-section-title">Basic Configuration</span>
+            </div>
+            <div class="form-body">
+              <div class="form-grid">
+                <div class="form-field">
+                  <label class="form-label">Instance Name<span class="req">*</span></label>
+                  <input id="f-name" class="form-input" placeholder="e.g. web-server-prod-01" />
+                  <div class="form-err" id="err-name" style="display:none">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    Instance name is required
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Amazon Machine Image (AMI)<span class="req">*</span></label>
+                  <div class="form-select-wrap">
+                    <select id="f-ami" class="form-input">
+                      <option value="">Select AMI…</option>
+                      <option value="al2023">Amazon Linux 2023 AMI (ami-0abcdef1234567890)</option>
+                      <option value="ubuntu">Ubuntu Server 22.04 LTS (ami-0b1e234f5678abcde)</option>
+                      <option value="windows">Windows Server 2022 Base (ami-0c1d2345e6789abcd)</option>
+                      <option value="rhel">Red Hat Enterprise Linux 9 (ami-0d2e3456f789abcde)</option>
+                      <option value="suse">SUSE Linux Enterprise 15 (ami-0e3f4567a890bcdef)</option>
+                      <option value="debian">Debian GNU/Linux 12 (ami-0f4a5678b901cdef0)</option>
+                    </select>
+                  </div>
+                  <div class="form-err" id="err-ami" style="display:none">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    AMI is required
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Instance Type<span class="req">*</span></label>
+                  <div class="form-select-wrap">
+                    <select id="f-type" class="form-input" style="font-family:ui-monospace,'Cascadia Code',monospace">
+                      <option value="">Select instance type…</option>
+                      <option>t3.micro   — 2 vCPU | 1 GiB RAM</option>
+                      <option>t3.small   — 2 vCPU | 2 GiB RAM</option>
+                      <option>t3.medium  — 2 vCPU | 4 GiB RAM</option>
+                      <option>t3.large   — 2 vCPU | 8 GiB RAM</option>
+                      <option>m5.large   — 2 vCPU | 8 GiB RAM</option>
+                      <option>m5.xlarge  — 4 vCPU | 16 GiB RAM</option>
+                      <option>c5.large   — 2 vCPU | 4 GiB RAM</option>
+                      <option>r5.large   — 2 vCPU | 16 GiB RAM</option>
+                    </select>
+                  </div>
+                  <div class="form-err" id="err-type" style="display:none">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    Instance type is required
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Key Pair<span class="req">*</span></label>
+                  <div class="form-select-wrap">
+                    <select id="f-key" class="form-input">
+                      <option value="">Select key pair…</option>
+                      <option>dev-keypair-us-east-1</option>
+                      <option>prod-keypair-us-east-1</option>
+                      <option>staging-keypair</option>
+                      <option>bastion-keypair</option>
+                    </select>
+                  </div>
+                  <div class="form-err" id="err-key" style="display:none">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    Key pair is required
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Network -->
+          <div class="form-section">
+            <div class="form-section-header">
+              <span class="form-section-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg></span>
+              <span class="form-section-title">Network Configuration</span>
+            </div>
+            <div class="form-body">
+              <div class="form-grid">
+                <div class="form-field">
+                  <label class="form-label">VPC<span class="req">*</span></label>
+                  <div class="form-select-wrap">
+                    <select id="f-vpc" class="form-input">
+                      <option value="">Select VPC…</option>
+                      <option>vpc-0a1b2c3d4e5f6a7b8 | 10.0.0.0/16 (Production)</option>
+                      <option>vpc-1b2c3d4e5f6a7b8c9 | 10.1.0.0/16 (Staging)</option>
+                      <option>vpc-2c3d4e5f6a7b8c9d0 | 10.2.0.0/16 (Development)</option>
+                      <option>vpc-3d4e5f6a7b8c9d0e1 | 172.16.0.0/16 (Shared Services)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Subnet<span class="req">*</span></label>
+                  <div class="form-select-wrap">
+                    <select id="f-subnet" class="form-input">
+                      <option value="">Select subnet…</option>
+                      <option>subnet-0a1b… | us-east-1a | 10.0.1.0/24 (Public)</option>
+                      <option>subnet-1b2c… | us-east-1b | 10.0.2.0/24 (Public)</option>
+                      <option>subnet-2c3d… | us-east-1a | 10.0.11.0/24 (Private)</option>
+                      <option>subnet-3d4e… | us-east-1b | 10.0.12.0/24 (Private)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Security Group<span class="req">*</span></label>
+                  <div class="form-select-wrap">
+                    <select id="f-sg" class="form-input">
+                      <option value="">Select security group…</option>
+                      <option>sg-0a1b2c3d4e5f6a7b8 | default</option>
+                      <option>sg-1b2c3d4e5f6a7b8c9 | web-tier-sg</option>
+                      <option>sg-2c3d4e5f6a7b8c9d0 | app-tier-sg</option>
+                      <option>sg-3d4e5f6a7b8c9d0e1 | db-tier-sg</option>
+                      <option>sg-4e5f6a7b8c9d0e1f2 | bastion-sg</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">IAM Role</label>
+                  <div class="form-select-wrap">
+                    <select id="f-iam" class="form-input">
+                      <option value="">None (no IAM role)</option>
+                      <option>EC2-SSM-Role</option>
+                      <option>EC2-S3-ReadOnly</option>
+                      <option>EC2-CloudWatch-Agent</option>
+                      <option>EC2-Full-Access</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="checkbox-row">
+                  <input type="checkbox" id="f-pip" checked />
+                  <div>
+                    <div class="checkbox-label">Enable Public IP Address</div>
+                    <div class="checkbox-hint">Assign a public IPv4 address to the instance on launch.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Storage -->
+          <div class="form-section">
+            <div class="form-section-header">
+              <span class="form-section-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></span>
+              <span class="form-section-title">Storage</span>
+            </div>
+            <div class="form-body">
+              <div class="form-grid">
+                <div class="form-field">
+                  <label class="form-label">Root Volume Size (GiB)<span class="req">*</span></label>
+                  <input id="f-vol" class="form-input" type="number" value="20" min="8" max="16384" />
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Volume Type<span class="req">*</span></label>
+                  <div class="form-select-wrap">
+                    <select id="f-vtype" class="form-input">
+                      <option value="gp3">gp3 — General Purpose SSD (recommended)</option>
+                      <option value="gp2">gp2 — General Purpose SSD (previous gen)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tags -->
+          <div class="form-section">
+            <div class="form-section-header">
+              <span class="form-section-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>
+              <span class="form-section-title">Tags</span>
+            </div>
+            <div class="form-body">
+              <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px">Tags help you categorise and manage AWS resources.</p>
+              <div class="form-grid">
+                <div class="form-field">
+                  <label class="form-label">Environment<span class="req">*</span></label>
+                  <div class="form-select-wrap">
+                    <select id="f-env" class="form-input">
+                      <option value="">Select environment…</option>
+                      <option>dev</option><option>staging</option>
+                      <option>production</option><option>shared</option><option>sandbox</option>
+                    </select>
+                  </div>
+                  <div class="form-err" id="err-env" style="display:none">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    Environment tag is required
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Owner<span class="req">*</span></label>
+                  <input id="f-owner" class="form-input" placeholder="e.g. team-platform" />
+                  <div class="form-err" id="err-owner" style="display:none">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    Owner tag is required
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Project<span class="req">*</span></label>
+                  <input id="f-project" class="form-input" placeholder="e.g. ecommerce-v2" />
+                  <div class="form-err" id="err-project" style="display:none">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    Project tag is required
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="form-footer">
+            <span class="form-footer-note">All fields marked <span style="color:#F85149">*</span> are required before launching.</span>
+            <div style="display:flex;gap:8px">
+              <button type="button" class="btn btn-secondary" onclick="resetForm()">Reset</button>
+              <button type="submit" class="btn btn-primary" id="launch-btn" style="min-width:150px;justify-content:center">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Launch Instance
+              </button>
+            </div>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- ═══════════ MANAGE INSTANCES ═══════════ -->
+      <div class="page" id="page-manage">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Manage Instances</div>
+            <div class="page-sub" id="manage-sub">8 instances shown · us-east-1</div>
+          </div>
+          <div class="manage-stats">
+            <span class="ms"><span class="ms-dot" style="background:#3FB950"></span><span id="ms-running">5</span> running</span>
+            <span class="ms-sep">|</span>
+            <span class="ms"><span class="ms-dot" style="background:#D29922"></span><span id="ms-stopped">2</span> stopped</span>
+          </div>
+        </div>
+
+        <div class="manage-filters">
+          <div class="search-wrap">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="search-input" id="search-input" placeholder="Search by name or instance ID…" oninput="filterInstances()" />
+          </div>
+          <div class="filter-chips">
+            <button class="chip active" data-filter="all" onclick="setFilter('all',this)">All States</button>
+            <button class="chip" data-filter="running" onclick="setFilter('running',this)">Running</button>
+            <button class="chip" data-filter="stopped" onclick="setFilter('stopped',this)">Stopped</button>
+            <button class="chip" data-filter="terminated" onclick="setFilter('terminated',this)">Terminated</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Instance Name</th><th>Instance ID</th><th>State</th>
+                  <th>AMI</th><th>Instance Type</th><th>Launch Time</th>
+                  <th>Availability Zone</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="manage-tbody"></tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <span id="table-count">Showing 8 of 8 instances</span>
+            <span id="table-time"></span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Confirm modal -->
+<div class="modal-backdrop" id="modal-backdrop" style="display:none" onclick="closeModalBackdrop(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-icon-wrap" id="modal-icon-wrap">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div>
+        <div class="modal-title" id="modal-title">Confirm Action</div>
+        <div class="modal-msg" id="modal-msg">Are you sure?</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" id="modal-confirm-btn" onclick="confirmAction()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Data ───────────────────────────────────────────
+const instances = [
+  { id:'i-0a1b2c3d4e5f6a7b8', name:'web-server-prod-01',    state:'running',    amiName:'Amazon Linux 2023',      type:'t3.medium',  launched:'2024-11-15T08:23:11Z', az:'us-east-1a', env:'production' },
+  { id:'i-1b2c3d4e5f6a7b8c9', name:'api-server-prod-01',    state:'running',    amiName:'Ubuntu Server 22.04',    type:'m5.large',   launched:'2024-11-10T14:05:33Z', az:'us-east-1b', env:'production' },
+  { id:'i-2c3d4e5f6a7b8c9d0', name:'db-server-prod-01',     state:'stopped',    amiName:'Amazon Linux 2023',      type:'r5.large',   launched:'2024-10-28T09:11:47Z', az:'us-east-1a', env:'production' },
+  { id:'i-3d4e5f6a7b8c9d0e1', name:'web-server-staging-01', state:'running',    amiName:'Ubuntu Server 22.04',    type:'t3.small',   launched:'2024-11-20T11:44:22Z', az:'us-east-1c', env:'staging'    },
+  { id:'i-4e5f6a7b8c9d0e1f2', name:'bastion-host-01',       state:'running',    amiName:'Amazon Linux 2023',      type:'t3.micro',   launched:'2024-09-05T07:00:00Z', az:'us-east-1a', env:'shared'     },
+  { id:'i-5f6a7b8c9d0e1f2a3', name:'dev-workstation-01',    state:'stopped',    amiName:'Windows Server 2022',    type:'t3.large',   launched:'2024-11-18T15:30:00Z', az:'us-east-1b', env:'dev'        },
+  { id:'i-6a7b8c9d0e1f2a3b4', name:'ci-runner-dev-01',      state:'terminated', amiName:'Ubuntu Server 22.04',    type:'t3.medium',  launched:'2024-11-01T09:00:00Z', az:'us-east-1a', env:'dev'        },
+  { id:'i-7b8c9d0e1f2a3b4c5', name:'analytics-server-01',  state:'running',    amiName:'Red Hat Enterprise 9',   type:'c5.xlarge',  launched:'2024-11-12T13:20:00Z', az:'us-east-1c', env:'production' },
+]
+
+let currentFilter = 'all'
+let pendingAction = null
+let loadingRowId  = null
+
+// ─── Navigation ─────────────────────────────────────
+const breadcrumbs = { dashboard:'Dashboard', create:'Create Instance', manage:'Manage Instances' }
+
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
+  document.getElementById('page-' + page).classList.add('active')
+  document.querySelector(`[data-page="${page}"]`).classList.add('active')
+  document.getElementById('breadcrumb-current').textContent = breadcrumbs[page]
+  if (page === 'manage') renderManage()
+  if (page === 'dashboard') renderDashboard()
+  window.scrollTo(0, 0)
+}
+
+function toggleSidebar() {
+  const s = document.querySelector('.sidebar')
+  s.style.width = (s.style.width === '60px') ? 'var(--sidebar-w)' : '60px'
+}
+
+// ─── Theme ──────────────────────────────────────────
+let isDark = true
+function toggleTheme() {
+  isDark = !isDark
+  document.body.style.setProperty('--bg',       isDark ? '#0D1117' : '#F6F8FA')
+  document.body.style.setProperty('--surface',  isDark ? '#161B22' : '#FFFFFF')
+  document.body.style.setProperty('--surface2', isDark ? '#1C2333' : '#F6F8FA')
+  document.body.style.setProperty('--border',   isDark ? '#30363D' : '#D0D7DE')
+  document.body.style.setProperty('--border2',  isDark ? '#21262D' : '#E6EAF0')
+  document.body.style.setProperty('--text',     isDark ? '#E6EDF3' : '#1A1E26')
+  document.body.style.setProperty('--text-muted',isDark ? '#8B949E' : '#57606A')
+  document.body.style.setProperty('--text-dim', isDark ? '#6E7681' : '#8C959F')
+  document.body.style.setProperty('--sidebar-bg',isDark ? '#161B22': '#FAFBFC')
+  document.body.style.background = isDark ? '#0D1117' : '#F6F8FA'
+  const icon = document.getElementById('theme-icon')
+  icon.innerHTML = isDark
+    ? '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>'
+    : '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'
+}
+
+// ─── Toast ──────────────────────────────────────────
+let toastId = 0
+function showToast(type, title, msg, duration=4000) {
+  const id = ++toastId
+  const c = document.getElementById('toast-container')
+  const iconMap = {
+    success: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    info:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+    warn:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    danger:  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+  }
+  const el = document.createElement('div')
+  el.id = 'toast-' + id
+  el.className = `toast toast-${type}`
+  el.innerHTML = `<span class="toast-icon">${iconMap[type]}</span><div class="toast-text"><div class="toast-title">${title}</div><div class="toast-msg">${msg}</div></div><button class="toast-close" onclick="dismissToast(${id})">×</button>`
+  c.appendChild(el)
+  setTimeout(() => dismissToast(id), duration)
+}
+
+function dismissToast(id) {
+  const el = document.getElementById('toast-' + id)
+  if (!el) return
+  el.classList.add('out')
+  setTimeout(() => el.remove(), 220)
+}
+
+// ─── Dashboard ──────────────────────────────────────
+function renderDashboard() {
+  const running    = instances.filter(i => i.state === 'running').length
+  const stopped    = instances.filter(i => i.state === 'stopped').length
+  const terminated = instances.filter(i => i.state === 'terminated').length
+
+  document.getElementById('running-count').textContent    = running
+  document.getElementById('stopped-count').textContent    = stopped
+  document.getElementById('terminated-count').textContent = terminated
+  document.getElementById('util-running').textContent     = running
+  document.getElementById('util-bar').style.width         = `${(running / instances.length) * 100}%`
+
+  const tbody = document.getElementById('recent-tbody')
+  tbody.innerHTML = instances.slice(0,5).map(i => `
+    <tr>
+      <td class="name">${i.name}</td>
+      <td class="mono">${i.id}</td>
+      <td>${badge(i.state)}</td>
+      <td class="type-mono">${i.type}</td>
+      <td>${i.az}</td>
+      <td>${envBadge(i.env)}</td>
+    </tr>`).join('')
+}
+
+function badge(state) {
+  const cls = { running:'b-running', stopped:'b-stopped', terminated:'b-terminated', pending:'b-pending' }
+  return `<span class="badge ${cls[state]||''}"><span class="badge-dot"></span>${state}</span>`
+}
+
+function envBadge(env) {
+  const cls = { production:'e-prod', staging:'e-staging', dev:'e-dev', shared:'e-shared' }
+  return `<span class="env-tag ${cls[env]||'e-dev'}">${env}</span>`
+}
+
+function fmtDate(s) {
+  return new Date(s).toLocaleString('en-US',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
+}
+
+// ─── Manage ─────────────────────────────────────────
+function renderManage() {
+  const running  = instances.filter(i => i.state === 'running').length
+  const stopped  = instances.filter(i => i.state === 'stopped').length
+  document.getElementById('ms-running').textContent = running
+  document.getElementById('ms-stopped').textContent = stopped
+  document.getElementById('table-time').textContent = 'Last refreshed: ' + new Date().toLocaleTimeString()
+  filterInstances()
+}
+
+function filterInstances() {
+  const q = (document.getElementById('search-input').value || '').toLowerCase()
+  const filtered = instances.filter(i => {
+    const ms = i.state === 'all' || i.state === currentFilter || currentFilter === 'all'
+    const mq = !q || i.name.toLowerCase().includes(q) || i.id.toLowerCase().includes(q)
+    return ms && mq
+  })
+
+  document.getElementById('manage-sub').textContent   = `${filtered.length} instance${filtered.length!==1?'s':''} shown · us-east-1`
+  document.getElementById('table-count').textContent  = `Showing ${filtered.length} of ${instances.length} instances`
+
+  const tbody = document.getElementById('manage-tbody')
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="3" width="20" height="7" rx="1"/><rect x="2" y="14" width="20" height="7" rx="1"/></svg><p>No instances match your filters.</p></div></td></tr>`
+    return
+  }
+
+  tbody.innerHTML = filtered.map(i => {
+    const isLoading   = loadingRowId === i.id
+    const isTerminated = i.state === 'terminated'
+    const isRunning   = i.state === 'running'
+    const isStopped   = i.state === 'stopped'
+    return `<tr style="${isTerminated?'opacity:.6':''}">
+      <td class="name" style="display:table-cell">
+        ${isLoading ? '<span class="spinner spinner-orange" style="display:inline-block;vertical-align:middle;margin-right:6px"></span>' : ''}${i.name}
+      </td>
+      <td class="mono">${i.id}</td>
+      <td>${badge(i.state)}</td>
+      <td style="font-size:11px">${i.amiName}</td>
+      <td class="type-mono">${i.type}</td>
+      <td style="font-size:11px">${fmtDate(i.launched)}</td>
+      <td>${i.az}</td>
+      <td>
+        <div class="actions">
+          <button class="btn-action btn-start" onclick="doAction('${i.id}','start')" ${isLoading||!isStopped?'disabled':''}>▶ Start</button>
+          <button class="btn-action btn-stop"  onclick="doAction('${i.id}','stop')"  ${isLoading||!isRunning?'disabled':''}>■ Stop</button>
+          <button class="btn-action btn-reboot" onclick="doAction('${i.id}','reboot')" ${isLoading||!isRunning?'disabled':''}>↻ Reboot</button>
+          <button class="btn btn-danger" onclick="doAction('${i.id}','terminate')" ${isLoading||isTerminated?'disabled':''}>Terminate</button>
+        </div>
+      </td>
+    </tr>`
+  }).join('')
+}
+
+function setFilter(f, el) {
+  currentFilter = f
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'))
+  el.classList.add('active')
+  filterInstances()
+}
+
+// ─── Instance actions ────────────────────────────────
+const ACTION_CFG = {
+  start:     { title:'Start Instance',     msg: n=>`Start instance "${n}"?`,                                      danger:false, label:'Start',     toState:'running',    toastType:'success', toastTitle:'Instance started', toastMsg: n=>`"${n}" is now running.`           },
+  stop:      { title:'Stop Instance',      msg: n=>`Stop instance "${n}"? Running processes will be interrupted.`, danger:false, label:'Stop',      toState:'stopped',    toastType:'warn',    toastTitle:'Instance stopped',  toastMsg: n=>`"${n}" has been stopped.`         },
+  reboot:    { title:'Reboot Instance',    msg: n=>`Reboot instance "${n}"? The instance will restart.`,           danger:false, label:'Reboot',    toState:null,         toastType:'info',    toastTitle:'Instance rebooting',toastMsg: n=>`"${n}" is rebooting.`             },
+  terminate: { title:'Terminate Instance', msg: n=>`Permanently terminate "${n}"? This cannot be undone.`,        danger:true,  label:'Terminate', toState:'terminated', toastType:'danger',  toastTitle:'Instance terminated',toastMsg: n=>`"${n}" has been terminated.`     },
+}
+
+function doAction(id, action) {
+  const inst = instances.find(i => i.id === id)
+  const cfg  = ACTION_CFG[action]
+  pendingAction = { id, action, name: inst.name }
+
+  document.getElementById('modal-title').textContent = cfg.title
+  document.getElementById('modal-msg').textContent   = cfg.msg(inst.name)
+  const iconWrap = document.getElementById('modal-icon-wrap')
+  iconWrap.className = `modal-icon-wrap ${cfg.danger ? 'modal-icon-danger' : 'modal-icon-info'}`
+  iconWrap.innerHTML = cfg.danger
+    ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+    : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+
+  const btn = document.getElementById('modal-confirm-btn')
+  btn.className = `btn ${cfg.danger ? 'btn-danger !text-sm !py-2 !px-4' : 'btn-primary'}`
+  if (cfg.danger) { btn.style.padding='7px 16px';btn.style.fontSize='13px' }
+  btn.textContent = cfg.label
+
+  document.getElementById('modal-backdrop').style.display = 'flex'
+}
+
+async function confirmAction() {
+  if (!pendingAction) return
+  const { id, action, name } = pendingAction
+  const cfg = ACTION_CFG[action]
+  closeModal()
+  loadingRowId = id
+  renderManage()
+
+  await new Promise(r => setTimeout(r, 1200))
+  if (cfg.toState) {
+    const inst = instances.find(i => i.id === id)
+    if (inst) inst.state = cfg.toState
+  }
+  loadingRowId = null
+  renderManage()
+  renderDashboard()
+  showToast(cfg.toastType, cfg.toastTitle, cfg.toastMsg(name))
+}
+
+function closeModal() {
+  document.getElementById('modal-backdrop').style.display = 'none'
+  pendingAction = null
+}
+function closeModalBackdrop(e) {
+  if (e.target === document.getElementById('modal-backdrop')) closeModal()
+}
+
+// ─── Create form ────────────────────────────────────
+function resetForm() {
+  document.getElementById('create-form').reset()
+  document.querySelectorAll('.form-err').forEach(e => e.style.display='none')
+  document.querySelectorAll('.form-input').forEach(e => e.classList.remove('error'))
+}
+
+function submitCreate(e) {
+  e.preventDefault()
+  let valid = true
+  const fields = [
+    { id:'f-name',  err:'err-name',  check:()=>document.getElementById('f-name').value.trim() },
+    { id:'f-ami',   err:'err-ami',   check:()=>document.getElementById('f-ami').value },
+    { id:'f-type',  err:'err-type',  check:()=>document.getElementById('f-type').value },
+    { id:'f-key',   err:'err-key',   check:()=>document.getElementById('f-key').value },
+    { id:'f-env',   err:'err-env',   check:()=>document.getElementById('f-env').value },
+    { id:'f-owner', err:'err-owner', check:()=>document.getElementById('f-owner').value.trim() },
+    { id:'f-project',err:'err-project',check:()=>document.getElementById('f-project').value.trim() },
+  ]
+  fields.forEach(({ id, err, check }) => {
+    const el = document.getElementById(id)
+    const errEl = document.getElementById(err)
+    if (!check()) { el.classList.add('error'); errEl.style.display='flex'; valid=false }
+    else           { el.classList.remove('error'); errEl.style.display='none' }
+  })
+  if (!valid) return
+
+  const btn = document.getElementById('launch-btn')
+  btn.disabled = true
+  btn.innerHTML = '<span class="spinner"></span> Launching…'
+
+  const name = document.getElementById('f-name').value.trim()
+  setTimeout(() => {
+    const newId = 'i-' + Math.random().toString(16).slice(2,14)
+    btn.disabled = false
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Launch Instance'
+
+    // Add to instances
+    const amiMap = { al2023:'Amazon Linux 2023', ubuntu:'Ubuntu Server 22.04', windows:'Windows Server 2022', rhel:'RHEL 9', suse:'SUSE Linux 15', debian:'Debian 12' }
+    const ami = document.getElementById('f-ami').value
+    const type = document.getElementById('f-type').value.trim().split(' ')[0]
+    instances.unshift({
+      id: newId, name, state:'running', amiName: amiMap[ami]||ami, type,
+      launched: new Date().toISOString(), az:'us-east-1a', env: document.getElementById('f-env').value
+    })
+
+    resetForm()
+    showToast('success', 'Instance launched', `"${name}" — ${newId}`, 5000)
+  }, 1500)
+}
+
+// ─── Init ────────────────────────────────────────────
+renderDashboard()
+document.getElementById('table-time').textContent = 'Last refreshed: ' + new Date().toLocaleTimeString()
+</script>
+</body>
+</html>

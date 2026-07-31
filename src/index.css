@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-gray-200 dark:border-aws-navy-border;
+  }
+
+  body {
+    @apply bg-gray-50 dark:bg-aws-navy text-gray-900 dark:text-gray-100 font-sans antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-aws-navy-light;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-aws-navy-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
+  }
+}
+
+@layer components {
+  .aws-input {
+    @apply w-full rounded-md border border-gray-300 dark:border-aws-navy-border
+           bg-white dark:bg-aws-navy-light
+           text-gray-900 dark:text-gray-100
+           px-3 py-2 text-sm
+           placeholder:text-gray-400 dark:placeholder:text-gray-500
+           focus:outline-none focus:ring-2 focus:ring-aws-orange focus:border-transparent
+           transition-colors duration-150;
+  }
+
+  .aws-label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+  }
+
+  .aws-btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold
+           bg-aws-orange hover:bg-aws-orange-dark active:scale-95
+           text-white shadow-sm
+           focus:outline-none focus:ring-2 focus:ring-aws-orange focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-all duration-150;
+  }
+
+  .aws-btn-secondary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold
+           bg-white dark:bg-aws-navy-light hover:bg-gray-50 dark:hover:bg-aws-navy-border
+           text-gray-700 dark:text-gray-200
+           border border-gray-300 dark:border-aws-navy-border shadow-sm
+           focus:outline-none focus:ring-2 focus:ring-aws-orange focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-all duration-150 active:scale-95;
+  }
+
+  .aws-btn-danger {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold
+           bg-red-600 hover:bg-red-700 active:scale-95
+           text-white shadow-sm
+           focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-all duration-150;
+  }
+
+  .aws-btn-action {
+    @apply inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold
+           bg-white dark:bg-aws-navy-light hover:bg-gray-50 dark:hover:bg-aws-navy-border
+           text-gray-700 dark:text-gray-200
+           border border-gray-300 dark:border-aws-navy-border shadow-sm
+           focus:outline-none focus:ring-2 focus:ring-aws-orange focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-all duration-150 active:scale-95;
+  }
+
+  .aws-card {
+    @apply bg-white dark:bg-aws-navy-light rounded-lg shadow-card border border-gray-200 dark:border-aws-navy-border;
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium
+           text-gray-300 hover:text-white hover:bg-aws-navy-border
+           transition-colors duration-150 cursor-pointer;
+  }
+
+  .sidebar-item.active {
+    @apply bg-aws-orange text-white;
+  }
+}

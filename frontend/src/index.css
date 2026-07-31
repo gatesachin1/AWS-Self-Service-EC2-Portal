@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 dark:bg-aws-navy text-gray-900 dark:text-gray-100
+           font-sans antialiased;
+  }
+  ::-webkit-scrollbar          { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track    { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb    { @apply bg-gray-300 dark:bg-aws-border rounded-full; }
+}
+
+@layer components {
+  /* ── Inputs ── */
+  .aws-input {
+    @apply w-full rounded-md border border-gray-300 dark:border-aws-border
+           bg-white dark:bg-aws-navy-lt text-gray-900 dark:text-gray-100
+           px-3 py-2 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500
+           focus:outline-none focus:ring-2 focus:ring-aws-orange focus:border-transparent
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-colors duration-150;
+  }
+  .aws-input.error {
+    @apply ring-2 ring-red-500 border-red-400;
+  }
+  .aws-label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold
+           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-aws-orange
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-all duration-150 active:scale-95;
+  }
+  .btn-primary {
+    @apply btn bg-aws-orange hover:bg-aws-orange-dk text-white shadow-sm;
+  }
+  .btn-secondary {
+    @apply btn bg-white dark:bg-aws-navy-lt hover:bg-gray-50 dark:hover:bg-aws-border
+           text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-aws-border shadow-sm;
+  }
+  .btn-danger {
+    @apply btn bg-red-600 hover:bg-red-700 text-white shadow-sm;
+  }
+  .btn-action {
+    @apply inline-flex items-center gap-1 px-2.5 py-1.5 rounded text-xs font-semibold
+           bg-white dark:bg-aws-navy-lt border border-gray-300 dark:border-aws-border
+           text-gray-700 dark:text-gray-200
+           hover:border-aws-orange hover:text-aws-orange dark:hover:border-aws-orange dark:hover:text-aws-orange
+           disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:text-gray-700
+           transition-all duration-150 active:scale-95;
+  }
+
+  /* ── Cards ── */
+  .aws-card {
+    @apply bg-white dark:bg-aws-navy-lt rounded-lg
+           border border-gray-200 dark:border-aws-border shadow-sm;
+  }
+
+  /* ── Sidebar items ── */
+  .sidebar-link {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium
+           text-gray-300 hover:text-white hover:bg-aws-squid-lt
+           transition-colors duration-150 cursor-pointer;
+  }
+  .sidebar-link.active {
+    @apply bg-aws-orange text-white;
+  }
+
+  /* ── Form field error ── */
+  .field-error {
+    @apply mt-1 text-xs text-red-500 flex items-center gap-1;
+  }
+
+  /* ── Loading overlay ── */
+  .loading-overlay {
+    @apply absolute inset-0 bg-white/60 dark:bg-aws-navy/60
+           flex items-center justify-center rounded-lg z-10;
+  }
+}
