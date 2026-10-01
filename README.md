@@ -319,4 +319,4 @@ Costs scale with traffic. Destroy with `terraform destroy` when not in use.
 
 **Sachin Gate**
 - GitHub: [@gatesachin1](https://github.com/gatesachin1)
-- Email: Sachin.Gate@elliotsystems.com
+- Email: gatesachin1112@gmail.com
