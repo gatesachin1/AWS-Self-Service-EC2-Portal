@@ -61,7 +61,7 @@ export default function VpcPage() {
     <div className="space-y-5">
       <div>
         <div className="flex items-center gap-3 mb-1">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white">
+          <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white">
             <NetworkIcon />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Virtual Private Cloud</h1>
@@ -88,26 +88,18 @@ export default function VpcPage() {
         ))}
       </div>
 
-      <div className="border-b border-gray-200 dark:border-aws-border">
-        <nav className="flex gap-1">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
-                activeTab === tab.key
-                  ? 'border-aws-orange text-aws-orange'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-300'
-              }`}
-            >
-              {tab.label}
-              <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-bold ${
-                activeTab === tab.key ? 'bg-aws-orange text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-              }`}>{tab.count}</span>
-            </button>
-          ))}
-        </nav>
-      </div>
+      <nav className="pill-tabs">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`pill-tab ${activeTab === tab.key ? 'active' : ''}`}
+          >
+            {tab.label}
+            <span className="count">{tab.count}</span>
+          </button>
+        ))}
+      </nav>
 
       {loading ? (
         <div className="flex justify-center py-24"><Spinner /></div>

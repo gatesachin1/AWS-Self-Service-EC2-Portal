@@ -20,6 +20,7 @@ export function useInstances(autoLoad = true) {
   const [loading, setLoading]     = useState(false)
   const [actionLoading, setActionLoading] = useState(null) // instance_id being acted on
   const [error, setError]         = useState(null)
+  const [lastRefreshed, setLastRefreshed] = useState(null)
 
   const refresh = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -27,6 +28,7 @@ export function useInstances(autoLoad = true) {
     try {
       const data = await listInstances()
       setInstances(data.instances ?? [])
+      setLastRefreshed(new Date())
     } catch (err) {
       setError(err.message)
       if (!silent) toast.error(`Failed to load instances: ${err.message}`)
@@ -70,5 +72,5 @@ export function useInstances(autoLoad = true) {
     terminated: instances.filter((i) => i.state === 'terminated').length,
   }
 
-  return { instances, counts, loading, actionLoading, error, refresh, performAction }
+  return { instances, counts, loading, actionLoading, error, lastRefreshed, refresh, performAction }
 }

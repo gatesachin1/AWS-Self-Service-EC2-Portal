@@ -1,9 +1,32 @@
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import StatsCard from '../components/ui/StatsCard'
 import Badge from '../components/ui/Badge'
 import Spinner from '../components/ui/Spinner'
 import ErrorBanner from '../components/ui/ErrorBanner'
 import { useInstances } from '../hooks/useInstances'
+
+const QUICK_LINKS = [
+  {
+    to: '/analytics', label: 'Analytics', desc: 'Cost, health & footprint trends',
+    accent: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />,
+  },
+  {
+    to: '/domains', label: 'Domains & DNS', desc: 'SSL expiry & edge traffic',
+    accent: 'bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400',
+    icon: <><circle cx="12" cy="12" r="9" /><line x1="3" y1="12" x2="21" y2="12" /><path strokeLinecap="round" d="M12 3a15.3 15.3 0 014 9 15.3 15.3 0 01-4 9 15.3 15.3 0 01-4-9 15.3 15.3 0 014-9z" /></>,
+  },
+  {
+    to: '/cloudtrail', label: 'CloudTrail', desc: 'Live account activity feed',
+    accent: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />,
+  },
+  {
+    to: '/cloudwatch', label: 'CloudWatch', desc: 'Alarms & dashboards',
+    accent: 'bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />,
+  },
+]
 
 function ServerIcon()  { return <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="7" rx="1"/><rect x="2" y="14" width="20" height="7" rx="1"/><line x1="6" y1="6.5" x2="6.01" y2="6.5"/><line x1="6" y1="17.5" x2="6.01" y2="17.5"/></svg> }
 function PlayIcon()    { return <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg> }
@@ -46,6 +69,25 @@ export default function Dashboard() {
       </div>
 
       <ErrorBanner message={error} onRetry={refresh} />
+
+      {/* Quick links */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {QUICK_LINKS.map((q) => (
+          <Link
+            key={q.to}
+            to={q.to}
+            className="aws-card px-4 py-3.5 flex items-center gap-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+          >
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${q.accent}`}>
+              <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">{q.icon}</svg>
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{q.label}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{q.desc}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

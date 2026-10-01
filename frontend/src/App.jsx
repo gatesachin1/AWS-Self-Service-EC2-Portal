@@ -7,7 +7,10 @@ import GenericService from './pages/GenericService'
 import VpcPage from './pages/VpcPage'
 import IamPage from './pages/IamPage'
 import CloudWatchPage from './pages/CloudWatchPage'
+import CloudTrailPage from './pages/CloudTrailPage'
 import DeveloperToolsPage from './pages/DeveloperToolsPage'
+import AnalyticsPage from './pages/AnalyticsPage'
+import DomainsPage from './pages/DomainsPage'
 
 export default function App() {
   return (
@@ -17,6 +20,7 @@ export default function App() {
 
         {/* Core */}
         <Route path="dashboard"        element={<Dashboard />} />
+        <Route path="analytics"        element={<AnalyticsPage />} />
         <Route path="create-instance"  element={<CreateInstance />} />
         <Route path="manage-instances" element={<ManageInstances />} />
 
@@ -46,10 +50,14 @@ export default function App() {
 
         {/* Monitoring */}
         <Route path="cloudwatch"       element={<CloudWatchPage />} />
+        <Route path="cloudtrail"       element={<CloudTrailPage />} />
 
         {/* Messaging */}
         <Route path="sqs"              element={<GenericService serviceKey="sqs" />} />
         <Route path="sns"              element={<GenericService serviceKey="sns" />} />
+
+        {/* Domains & DNS */}
+        <Route path="domains"          element={<DomainsPage />} />
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>

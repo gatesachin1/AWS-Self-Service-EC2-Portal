@@ -165,6 +165,81 @@ export const CW_DASHBOARDS = [
   { name: 'Business-KPIs',       widgets: 5,  region: 'global',    last_updated: '2024-11-18 16:00' },
 ]
 
+// ── CloudTrail ────────────────────────────────────────────────────────────────
+// Shaped like the real CloudTrail LookupEvents response — event_id, resource_type,
+// and access_key_id exist specifically so the Event History page's "Lookup
+// attributes" filter (Event ID / Resource type / AWS access key, same as the
+// real console) has real fields to search. Timestamps are generated relative
+// to page-load time (not hardcoded) so the time-range filter has something
+// meaningful to filter against no matter when this is viewed.
+const CT_EVENT_TEMPLATES = [
+  { event_name: 'ConsoleLogin',           event_source: 'signin.amazonaws.com',   resource_type: 'AWS::IAM::User',          read_only: false },
+  { event_name: 'RunInstances',           event_source: 'ec2.amazonaws.com',      resource_type: 'AWS::EC2::Instance',      read_only: false },
+  { event_name: 'StartInstances',         event_source: 'ec2.amazonaws.com',      resource_type: 'AWS::EC2::Instance',      read_only: false },
+  { event_name: 'StopInstances',          event_source: 'ec2.amazonaws.com',      resource_type: 'AWS::EC2::Instance',      read_only: false },
+  { event_name: 'TerminateInstances',     event_source: 'ec2.amazonaws.com',      resource_type: 'AWS::EC2::Instance',      read_only: false },
+  { event_name: 'DescribeInstances',      event_source: 'ec2.amazonaws.com',      resource_type: 'AWS::EC2::Instance',      read_only: true  },
+  { event_name: 'PutObject',              event_source: 's3.amazonaws.com',       resource_type: 'AWS::S3::Object',         read_only: false },
+  { event_name: 'GetObject',              event_source: 's3.amazonaws.com',       resource_type: 'AWS::S3::Object',         read_only: true  },
+  { event_name: 'DeleteObject',           event_source: 's3.amazonaws.com',       resource_type: 'AWS::S3::Object',         read_only: false },
+  { event_name: 'CreateBucket',           event_source: 's3.amazonaws.com',       resource_type: 'AWS::S3::Bucket',         read_only: false },
+  { event_name: 'PutBucketPolicy',        event_source: 's3.amazonaws.com',       resource_type: 'AWS::S3::Bucket',         read_only: false },
+  { event_name: 'DeleteSecurityGroup',    event_source: 'ec2.amazonaws.com',      resource_type: 'AWS::EC2::SecurityGroup', read_only: false },
+  { event_name: 'AssumeRole',             event_source: 'sts.amazonaws.com',      resource_type: 'AWS::IAM::Role',          read_only: false },
+  { event_name: 'CreateFunction20150331', event_source: 'lambda.amazonaws.com',   resource_type: 'AWS::Lambda::Function',   read_only: false },
+  { event_name: 'InvokeFunction',         event_source: 'lambda.amazonaws.com',   resource_type: 'AWS::Lambda::Function',   read_only: true  },
+  { event_name: 'UpdateTable',            event_source: 'dynamodb.amazonaws.com', resource_type: 'AWS::DynamoDB::Table',    read_only: false },
+  { event_name: 'DescribeDBInstances',    event_source: 'rds.amazonaws.com',      resource_type: 'AWS::RDS::DBInstance',    read_only: true  },
+  { event_name: 'ListUsers',              event_source: 'iam.amazonaws.com',      resource_type: 'AWS::IAM::User',          read_only: true  },
+  { event_name: 'CreateUser',             event_source: 'iam.amazonaws.com',      resource_type: 'AWS::IAM::User',          read_only: false },
+  { event_name: 'AttachRolePolicy',       event_source: 'iam.amazonaws.com',      resource_type: 'AWS::IAM::Role',          read_only: false },
+]
+
+const CT_USERS = ['sachin.gate', 'priya.mehta', 'devops-ci-bot', 'terraform-admin', 'readonly-auditor', 'legacy-deploy-user']
+const CT_IPS   = ['203.0.113.42', '10.0.1.45', '10.0.2.78', '198.51.100.9', '203.0.113.17', '185.220.101.7']
+const CT_RESOURCE_NAMES = {
+  'AWS::EC2::Instance':        ['i-0a1b2c3d4e5f6a7b8', 'i-1b2c3d4e5f6a7b8c9', 'i-2c3d4e5f6a7b8c9d0'],
+  'AWS::S3::Object':           ['prod-assets-bucket-us-east-1/logo.png', 'cloudfront-logs-prod/access.log.gz'],
+  'AWS::S3::Bucket':           ['prod-assets-bucket-us-east-1', 'terraform-state-backend'],
+  'AWS::EC2::SecurityGroup':   ['sg-4e5f6a7b8c9d0e1f2', 'sg-0a1b2c3d4e5f6a7b8'],
+  'AWS::IAM::Role':            ['GithubActionsOIDCRole', 'EC2PortalLambdaRole'],
+  'AWS::IAM::User':            ['sachin.gate', 'priya.mehta', 'Root'],
+  'AWS::Lambda::Function':     ['event-processor', 'ec2-portal-handler'],
+  'AWS::DynamoDB::Table':      ['OrderHistory', 'Sessions'],
+  'AWS::RDS::DBInstance':      ['prod-postgres-primary'],
+}
+
+function ctPad(n) { return String(n).padStart(2, '0') }
+function ctStamp(d) {
+  return `${d.getFullYear()}-${ctPad(d.getMonth() + 1)}-${ctPad(d.getDate())} ${ctPad(d.getHours())}:${ctPad(d.getMinutes())}:${ctPad(d.getSeconds())}`
+}
+
+export const CLOUDTRAIL_EVENTS = Array.from({ length: 70 }, (_, i) => {
+  const tpl          = CT_EVENT_TEMPLATES[i % CT_EVENT_TEMPLATES.length]
+  const minutesAgo   = Math.round(i * i * 3) // biased toward "now" — plenty of recent events, a long thin tail further back
+  const eventTime    = new Date(Date.now() - minutesAgo * 60_000)
+  const user         = CT_USERS[(i * 7) % CT_USERS.length]
+  const names        = CT_RESOURCE_NAMES[tpl.resource_type] || ['—']
+  const isCiUser     = user === 'devops-ci-bot' || user === 'terraform-admin'
+  const isFailure    = i % 11 === 0
+  const isDenied     = i % 23 === 0
+
+  return {
+    event_id:      `${i.toString(16).padStart(4, '0')}a1b2-c3d4-4e5f-8a9b-${(100000000000 + i).toString(16).padStart(12, '0')}`,
+    event_time:    ctStamp(eventTime),
+    event_name:    tpl.event_name,
+    event_source:  tpl.event_source,
+    username:      user,
+    source_ip:     CT_IPS[(i * 3) % CT_IPS.length],
+    aws_region:    'us-east-1',
+    resource:      names[i % names.length],
+    resource_type: tpl.resource_type,
+    access_key_id: isCiUser ? `AKIA${(i * 37).toString(36).toUpperCase().padStart(12, 'X')}` : '—',
+    read_only:     tpl.read_only ? 'Yes' : 'No',
+    status:        isDenied ? 'AccessDenied' : isFailure ? 'Failed' : 'Success',
+  }
+})
+
 // ── Developer Tools ───────────────────────────────────────────────────────────
 export const CODEPIPELINES = [
   { name: 'ecommerce-prod-pipeline', status: 'Succeeded', source: 'CodeCommit: ecommerce-app',  last_execution: '2024-11-20 10:23', stages: 4, created: '2023-01-25' },
@@ -201,4 +276,128 @@ export const CODESTAR_CONNECTIONS = [
   { name: 'github-org-connection', provider: 'GitHub', status: 'Available', owner: 'elliotsystems-org', arn: 'arn:aws:codeconnections:us-east-1:123456789012:connection/abc-123' },
   { name: 'github-personal',       provider: 'GitHub', status: 'Available', owner: 'sachin-gate',       arn: 'arn:aws:codeconnections:us-east-1:123456789012:connection/def-456' },
   { name: 'gitlab-enterprise',     provider: 'GitLab', status: 'Pending',   owner: 'elliot-gitlab',     arn: 'arn:aws:codeconnections:us-east-1:123456789012:connection/ghi-789' },
+]
+
+// ── Domains & DNS ─────────────────────────────────────────────────────────────
+export const DOMAINS = [
+  { domain: 'elliotsystems.com',    registrar: 'Route 53',  status: 'Active',         auto_renew: 'Yes', expires: '2027-03-12', nameservers: 'Route 53',   created: '2019-03-01' },
+  { domain: 'ecommerce-app.io',     registrar: 'Cloudflare', status: 'Active',         auto_renew: 'Yes', expires: '2027-01-18', nameservers: 'Cloudflare', created: '2021-07-22' },
+  { domain: 'internal-tools.dev',   registrar: 'Route 53',  status: 'Active',         auto_renew: 'No',  expires: '2026-10-22', nameservers: 'Route 53',   created: '2022-02-14' },
+  { domain: 'staging-api.net',      registrar: 'Namecheap', status: 'Active',         auto_renew: 'Yes', expires: '2027-06-05', nameservers: 'Cloudflare', created: '2020-09-10' },
+  { domain: 'legacy-portal.com',    registrar: 'GoDaddy',   status: 'Expiring Soon',  auto_renew: 'No',  expires: '2026-10-09', nameservers: 'Route 53',   created: '2018-05-20' },
+]
+
+export const SSL_CERTIFICATES = [
+  { domain: 'www.elliotsystems.com',    issuer: 'Amazon',        type: 'DV',       status: 'Issued', expires: '2027-01-15', auto_renew: 'Yes', in_use: 'CloudFront, ALB' },
+  { domain: 'api.ecommerce-app.io',     issuer: "Let's Encrypt", type: 'DV',       status: 'Issued', expires: '2026-10-09', auto_renew: 'Yes', in_use: 'Cloudflare Edge' },
+  { domain: '*.internal-tools.dev',     issuer: 'Amazon',        type: 'Wildcard', status: 'Issued', expires: '2026-10-22', auto_renew: 'No',  in_use: 'ALB' },
+  { domain: 'staging-api.net',          issuer: 'Sectigo',       type: 'DV',       status: 'Issued', expires: '2027-03-30', auto_renew: 'Yes', in_use: 'ALB' },
+  { domain: 'legacy-portal.com',        issuer: 'GoDaddy',       type: 'DV',       status: 'Expired', expires: '2026-09-18', auto_renew: 'No',  in_use: 'EC2 (nginx)' },
+]
+
+export const DNS_RECORDS = [
+  { domain: 'elliotsystems.com',  type: 'A',     name: '@',       value: '76.76.21.21',                                   ttl: 'Auto', proxied: 'Yes' },
+  { domain: 'elliotsystems.com',  type: 'CNAME', name: 'www',     value: 'elliotsystems.com',                              ttl: 'Auto', proxied: 'Yes' },
+  { domain: 'ecommerce-app.io',   type: 'A',     name: '@',       value: '104.21.5.12',                                    ttl: '3600', proxied: 'Yes' },
+  { domain: 'ecommerce-app.io',   type: 'A',     name: 'api',     value: '104.21.5.13',                                    ttl: '3600', proxied: 'Yes' },
+  { domain: 'ecommerce-app.io',   type: 'MX',    name: '@',       value: 'mail.ecommerce-app.io',                          ttl: '3600', proxied: 'No' },
+  { domain: 'internal-tools.dev', type: 'A',     name: '@',       value: '10.0.1.45',                                      ttl: '300',  proxied: 'No' },
+  { domain: 'internal-tools.dev', type: 'TXT',   name: '@',       value: 'v=spf1 include:_spf.google.com ~all',            ttl: '3600', proxied: 'No' },
+  { domain: 'staging-api.net',    type: 'CNAME', name: 'staging', value: 'staging-alb-901234.us-east-1.elb.amazonaws.com', ttl: '300',  proxied: 'No' },
+  { domain: 'legacy-portal.com',  type: 'A',     name: '@',       value: '203.0.113.88',                                   ttl: '3600', proxied: 'No' },
+]
+
+// Cloudflare-style edge analytics. No Cloudflare API token is configured yet,
+// so all of this stays mock-only until one is added (see the note on the
+// Domains & DNS → Analytics tab) — but it's shaped exactly like the real
+// Cloudflare Zone Analytics response so wiring in live data later is a
+// drop-in swap, not a redesign.
+
+function buildTrafficSeries(points, baseline, amplitude, threatBase) {
+  return Array.from({ length: points }, (_, i) => {
+    const wave     = Math.sin((i / points) * Math.PI * 2) * amplitude
+    const requests = Math.round(baseline + wave + (i % 5) * baseline * 0.01)
+    const cached   = Math.round(requests * (0.68 + (i % 3) * 0.03))
+    const threats  = Math.round(threatBase + Math.abs(Math.sin(i * 1.3)) * threatBase * 0.8)
+    return { requests, cached, uncached: requests - cached, threats }
+  })
+}
+
+const HOUR_LABELS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`)
+const DAY_LABELS  = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+export const CF_SERIES_24H = buildTrafficSeries(24, 53500, 14200, 14)
+  .map((d, i) => ({ label: HOUR_LABELS[i], ...d }))
+export const CF_SERIES_7D = buildTrafficSeries(7, 172000, 28000, 45)
+  .map((d, i) => ({ label: DAY_LABELS[i], ...d }))
+export const CF_SERIES_30D = buildTrafficSeries(30, 178000, 32000, 48)
+  .map((d, i) => ({ label: `${i + 1}`, ...d }))
+
+export const CF_SERIES_BY_RANGE = { '24h': CF_SERIES_24H, '7d': CF_SERIES_7D, '30d': CF_SERIES_30D }
+
+export const CF_SUMMARY_BY_RANGE = {
+  '24h': { requests: 1284302,  visitors: 48210,   bandwidth_gb: 48.7,   cached_pct: 76, threats: 342,  avg_response_ms: 128, uptime_pct: 99.98 },
+  '7d':  { requests: 8930214,  visitors: 312480,  bandwidth_gb: 341.2,  cached_pct: 74, threats: 2104, avg_response_ms: 134, uptime_pct: 99.96 },
+  '30d': { requests: 38210540, visitors: 1284200, bandwidth_gb: 1480.6, cached_pct: 73, threats: 8940, avg_response_ms: 131, uptime_pct: 99.95 },
+}
+
+// Relative traffic share per tracked domain — used to scale the "All domains"
+// totals above when a single domain is selected in the Analytics filter.
+export const CF_DOMAIN_SHARE = {
+  'elliotsystems.com':  0.12,
+  'ecommerce-app.io':   0.58,
+  'internal-tools.dev': 0.06,
+  'staging-api.net':    0.09,
+  'legacy-portal.com':  0.15,
+}
+
+export const CF_TRAFFIC_BY_COUNTRY = [
+  { country: 'United States',   flag: '🇺🇸', pct: 38 },
+  { country: 'India',           flag: '🇮🇳', pct: 19 },
+  { country: 'Germany',         flag: '🇩🇪', pct: 11 },
+  { country: 'United Kingdom',  flag: '🇬🇧', pct: 9  },
+  { country: 'Singapore',       flag: '🇸🇬', pct: 7  },
+  { country: 'Brazil',          flag: '🇧🇷', pct: 6  },
+  { country: 'Other',           flag: '🌐', pct: 10 },
+]
+
+export const CF_STATUS_CODES = [
+  { code: '2xx', label: 'Success',      pct: 91.4, color: '#22C55E' },
+  { code: '3xx', label: 'Redirect',     pct: 4.1,  color: '#4F6EF7' },
+  { code: '4xx', label: 'Client Error', pct: 3.8,  color: '#F59E0B' },
+  { code: '5xx', label: 'Server Error', pct: 0.7,  color: '#EF4444' },
+]
+
+export const CF_TOP_PATHS = [
+  { path: '/',                     requests: 284021, pct: 22.1 },
+  { path: '/api/v1/products',      requests: 198344, pct: 15.4 },
+  { path: '/assets/app.js',        requests: 162908, pct: 12.7 },
+  { path: '/api/v1/orders',        requests: 121553, pct: 9.5  },
+  { path: '/checkout',             requests: 84210,  pct: 6.6  },
+  { path: '/api/v1/auth/login',    requests: 67340,  pct: 5.2  },
+]
+
+export const CF_BOT_TRAFFIC = [
+  { name: 'Human',        pct: 78, color: '#4F6EF7' },
+  { name: 'Verified Bot',  pct: 15, color: '#22C55E' },
+  { name: 'Likely Bot',    pct: 7,  color: '#F59E0B' },
+]
+
+// ── Analytics (org-wide infra analytics) ───────────────────────────────────────
+export const COST_TREND = [
+  { month: 'Apr', EC2: 1240, S3: 310, RDS: 540, Lambda: 90,  Other: 220 },
+  { month: 'May', EC2: 1310, S3: 325, RDS: 540, Lambda: 110, Other: 240 },
+  { month: 'Jun', EC2: 1180, S3: 340, RDS: 560, Lambda: 125, Other: 210 },
+  { month: 'Jul', EC2: 1420, S3: 355, RDS: 560, Lambda: 140, Other: 260 },
+  { month: 'Aug', EC2: 1390, S3: 370, RDS: 580, Lambda: 160, Other: 250 },
+  { month: 'Sep', EC2: 1510, S3: 385, RDS: 600, Lambda: 175, Other: 275 },
+]
+
+export const RESOURCE_HEALTH_TREND = [
+  { week: 'W1', healthy: 92, warning: 6, critical: 2 },
+  { week: 'W2', healthy: 90, warning: 7, critical: 3 },
+  { week: 'W3', healthy: 94, warning: 5, critical: 1 },
+  { week: 'W4', healthy: 88, warning: 9, critical: 3 },
+  { week: 'W5', healthy: 95, warning: 4, critical: 1 },
+  { week: 'W6', healthy: 93, warning: 6, critical: 1 },
 ]

@@ -7,14 +7,6 @@ import ErrorBanner from '../components/ui/ErrorBanner'
 import { useResources } from '../hooks/useResources'
 import { createInstance } from '../api/ec2'
 
-// ── AMI definitions (static — fetched IDs come from user's account) ───────
-const AMI_LIST = [
-  { id: 'al2023',   label: 'Amazon Linux 2023',     value: '' },
-  { id: 'ubuntu24', label: 'Ubuntu Server 24.04 LTS', value: '' },
-  { id: 'win2025',  label: 'Windows Server 2025',    value: '' },
-  { id: 'rhel9',    label: 'Red Hat Enterprise Linux 9', value: '' },
-]
-
 const INSTANCE_TYPES = [
   't3.micro', 't3.small', 't3.medium', 't3.large',
   't3.xlarge', 'm5.large', 'm5.xlarge', 'm5.2xlarge',
@@ -35,10 +27,10 @@ function Section({ title, icon, children }) {
   )
 }
 
-function Field({ label, required, error, hint, children }) {
+function Field({ label, name, required, error, hint, children }) {
   return (
     <div>
-      <label className="aws-label">
+      <label className="aws-label" htmlFor={name}>
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
@@ -154,8 +146,9 @@ export default function CreateInstance() {
           <Section title="Basic Configuration" icon={<ConfigIcon />}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-              <Field label="Instance Name" required error={errors.instance_name?.message}>
+              <Field label="Instance Name" name="instance_name" required error={errors.instance_name?.message}>
                 <input
+                  id="instance_name"
                   {...register('instance_name', {
                     required: 'Instance name is required',
                     pattern: {
@@ -168,8 +161,9 @@ export default function CreateInstance() {
                 />
               </Field>
 
-              <Field label="AMI ID" required error={errors.ami_id?.message} hint="Enter the full AMI ID from your AWS account">
+              <Field label="AMI ID" name="ami_id" required error={errors.ami_id?.message} hint="Enter the full AMI ID from your AWS account">
                 <input
+                  id="ami_id"
                   {...register('ami_id', {
                     required: 'AMI ID is required',
                     pattern: { value: /^ami-[0-9a-f]{8,17}$/, message: 'Must be a valid AMI ID (ami-xxxxxxxxxxxxxxxx)' },
@@ -179,15 +173,15 @@ export default function CreateInstance() {
                 />
               </Field>
 
-              <Field label="Instance Type" required error={errors.instance_type?.message}>
-                <Select {...register('instance_type', { required: 'Instance type is required' })} className={errors.instance_type ? 'error' : ''}>
+              <Field label="Instance Type" name="instance_type" required error={errors.instance_type?.message}>
+                <Select id="instance_type" {...register('instance_type', { required: 'Instance type is required' })} className={errors.instance_type ? 'error' : ''}>
                   <option value="">Select instance type…</option>
                   {INSTANCE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                 </Select>
               </Field>
 
-              <Field label="Key Pair">
-                <Select {...register('key_pair')}>
+              <Field label="Key Pair" name="key_pair">
+                <Select id="key_pair" {...register('key_pair')}>
                   <option value="">No key pair (use SSM)</option>
                   {resLoading ? (
                     <option disabled>Loading…</option>
@@ -206,8 +200,8 @@ export default function CreateInstance() {
           <Section title="Network Configuration" icon={<NetworkIcon />}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-              <Field label="Subnet" required error={errors.subnet_id?.message}>
-                <Select {...register('subnet_id', { required: 'Subnet is required' })} className={errors.subnet_id ? 'error' : ''}>
+              <Field label="Subnet" name="subnet_id" required error={errors.subnet_id?.message}>
+                <Select id="subnet_id" {...register('subnet_id', { required: 'Subnet is required' })} className={errors.subnet_id ? 'error' : ''}>
                   <option value="">Select subnet…</option>
                   {resLoading ? (
                     <option disabled>Loading…</option>
@@ -221,8 +215,8 @@ export default function CreateInstance() {
                 </Select>
               </Field>
 
-              <Field label="Security Group" required error={errors.security_group_id?.message}>
-                <Select {...register('security_group_id', { required: 'Security group is required' })} className={errors.security_group_id ? 'error' : ''}>
+              <Field label="Security Group" name="security_group_id" required error={errors.security_group_id?.message}>
+                <Select id="security_group_id" {...register('security_group_id', { required: 'Security group is required' })} className={errors.security_group_id ? 'error' : ''}>
                   <option value="">Select security group…</option>
                   {resLoading ? (
                     <option disabled>Loading…</option>
@@ -234,8 +228,8 @@ export default function CreateInstance() {
                 </Select>
               </Field>
 
-              <Field label="IAM Instance Profile">
-                <Select {...register('iam_instance_profile')}>
+              <Field label="IAM Instance Profile" name="iam_instance_profile">
+                <Select id="iam_instance_profile" {...register('iam_instance_profile')}>
                   <option value="">None</option>
                   {resLoading ? (
                     <option disabled>Loading…</option>
@@ -247,8 +241,8 @@ export default function CreateInstance() {
                 </Select>
               </Field>
 
-              <Field label="Availability Zone">
-                <Select {...register('availability_zone')}>
+              <Field label="Availability Zone" name="availability_zone">
+                <Select id="availability_zone" {...register('availability_zone')}>
                   <option value="">AWS auto-select</option>
                   {resources.availability_zones.map((az) => (
                     <option key={az} value={az}>{az}</option>
@@ -278,8 +272,9 @@ export default function CreateInstance() {
           {/* ── Storage ── */}
           <Section title="Storage" icon={<StorageIcon />}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Root Volume Size (GiB)" required error={errors.root_volume_size?.message}>
+              <Field label="Root Volume Size (GiB)" name="root_volume_size" required error={errors.root_volume_size?.message}>
                 <input
+                  id="root_volume_size"
                   type="number"
                   {...register('root_volume_size', {
                     required: 'Volume size is required',
@@ -289,8 +284,8 @@ export default function CreateInstance() {
                   className={`aws-input ${errors.root_volume_size ? 'error' : ''}`}
                 />
               </Field>
-              <Field label="Volume Type" required>
-                <Select {...register('root_volume_type')}>
+              <Field label="Volume Type" name="root_volume_type" required>
+                <Select id="root_volume_type" {...register('root_volume_type')}>
                   <option value="gp3">gp3 — General Purpose SSD (recommended)</option>
                   <option value="gp2">gp2 — General Purpose SSD (previous gen)</option>
                   <option value="io1">io1 — Provisioned IOPS SSD</option>
@@ -306,23 +301,25 @@ export default function CreateInstance() {
               Tags are applied to the instance and root volume.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Field label="Environment" required error={errors.tags_env?.message}>
-                <Select {...register('tags_env', { required: 'Environment tag is required' })} className={errors.tags_env ? 'error' : ''}>
+              <Field label="Environment" name="tags_env" required error={errors.tags_env?.message}>
+                <Select id="tags_env" {...register('tags_env', { required: 'Environment tag is required' })} className={errors.tags_env ? 'error' : ''}>
                   <option value="">Select…</option>
                   {['dev', 'staging', 'production', 'shared', 'sandbox'].map((e) => (
                     <option key={e} value={e}>{e}</option>
                   ))}
                 </Select>
               </Field>
-              <Field label="Owner" required error={errors.tags_owner?.message}>
+              <Field label="Owner" name="tags_owner" required error={errors.tags_owner?.message}>
                 <input
+                  id="tags_owner"
                   {...register('tags_owner', { required: 'Owner tag is required' })}
                   placeholder="e.g. team-platform"
                   className={`aws-input ${errors.tags_owner ? 'error' : ''}`}
                 />
               </Field>
-              <Field label="Project" required error={errors.tags_project?.message}>
+              <Field label="Project" name="tags_project" required error={errors.tags_project?.message}>
                 <input
+                  id="tags_project"
                   {...register('tags_project', { required: 'Project tag is required' })}
                   placeholder="e.g. ecommerce-v2"
                   className={`aws-input ${errors.tags_project ? 'error' : ''}`}

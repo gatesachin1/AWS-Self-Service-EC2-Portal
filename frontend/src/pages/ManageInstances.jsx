@@ -38,7 +38,7 @@ function Th({ children, onClick, sorted }) {
 }
 
 export default function ManageInstances() {
-  const { instances, loading, actionLoading, error, refresh, performAction } = useInstances()
+  const { instances, loading, actionLoading, error, lastRefreshed, refresh, performAction } = useInstances()
 
   const [search,  setSearch]  = useState('')
   const [filter,  setFilter]  = useState('all')
@@ -66,8 +66,8 @@ export default function ManageInstances() {
       )
     }
     list = [...list].sort((a, b) => {
-      const av = a[sortKey] ?? ''
-      const bv = b[sortKey] ?? ''
+      const av = String(a[sortKey] ?? '')
+      const bv = String(b[sortKey] ?? '')
       return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av)
     })
     return list
@@ -189,7 +189,7 @@ export default function ManageInstances() {
             </div>
             <div className="px-4 py-2.5 border-t border-gray-200 dark:border-aws-border bg-gray-50 dark:bg-aws-navy flex justify-between text-xs text-gray-400 dark:text-gray-500">
               <span>Showing {displayed.length} / {instances.length}</span>
-              <span>Refreshed at {new Date().toLocaleTimeString()}</span>
+              <span>{lastRefreshed ? `Refreshed at ${lastRefreshed.toLocaleTimeString()}` : 'Not yet refreshed'}</span>
             </div>
           </>
         )}

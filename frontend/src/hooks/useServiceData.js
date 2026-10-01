@@ -9,8 +9,11 @@ import { getServiceData } from '../api/services'
  * For compound services (vpc, iam, cloudwatch, devtools) it returns the
  * object directly, e.g. { vpcs: [...], subnets: [...] }.
  * This hook normalises both: callers always receive the usable payload.
+ *
+ * Pass `pollMs` to re-fetch on an interval (e.g. for near-real-time views
+ * like CloudTrail) — only takes effect when a live API is configured.
  */
-export function useServiceData(serviceName, mockFallback) {
+export function useServiceData(serviceName, mockFallback, { pollMs } = {}) {
   const hasApi = !!import.meta.env.VITE_API_URL
 
   const [data, setData]       = useState(hasApi ? null : mockFallback)
@@ -21,27 +24,36 @@ export function useServiceData(serviceName, mockFallback) {
     if (!hasApi) return
 
     let cancelled = false
-    setLoading(true)
-    setError(null)
 
-    getServiceData(serviceName)
-      .then((body) => {
-        if (cancelled) return
-        // If the response has an `items` array, unwrap it (list services).
-        // Otherwise return the whole body (compound services).
-        setData(body.items !== undefined ? body.items : body)
-      })
-      .catch((err) => {
-        if (cancelled) return
-        setError(err.message)
-        setData(mockFallback)
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
+    function fetchData(isFirstLoad) {
+      if (isFirstLoad) setLoading(true)
+      setError(null)
 
-    return () => { cancelled = true }
-  }, [serviceName])
+      getServiceData(serviceName)
+        .then((body) => {
+          if (cancelled) return
+          // If the response has an `items` array, unwrap it (list services).
+          // Otherwise return the whole body (compound services).
+          setData(body.items !== undefined ? body.items : body)
+        })
+        .catch((err) => {
+          if (cancelled) return
+          setError(err.message)
+          if (isFirstLoad) setData(mockFallback)
+        })
+        .finally(() => {
+          if (!cancelled && isFirstLoad) setLoading(false)
+        })
+    }
+
+    fetchData(true)
+    const interval = pollMs ? setInterval(() => fetchData(false), pollMs) : null
+
+    return () => {
+      cancelled = true
+      if (interval) clearInterval(interval)
+    }
+  }, [serviceName, pollMs])
 
   return { data: data ?? mockFallback, loading, error }
 }

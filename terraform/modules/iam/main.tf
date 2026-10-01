@@ -212,6 +212,32 @@ data "aws_iam_policy_document" "services_read" {
     resources = ["*"]
   }
 
+  # CloudTrail
+  statement {
+    sid    = "CloudTrailReadOnly"
+    effect = "Allow"
+    actions = [
+      "cloudtrail:LookupEvents",
+      "cloudtrail:DescribeTrails",
+      "cloudtrail:GetTrailStatus",
+    ]
+    resources = ["*"]
+  }
+
+  # Domains & DNS (Route 53 Domains registration + ACM certificates)
+  # route53:ListResourceRecordSets is already granted by the Route53ReadOnly statement below.
+  statement {
+    sid    = "DomainsAndDNSReadOnly"
+    effect = "Allow"
+    actions = [
+      "route53domains:ListDomains",
+      "route53domains:GetDomainDetail",
+      "acm:ListCertificates",
+      "acm:DescribeCertificate",
+    ]
+    resources = ["*"]
+  }
+
   # SQS
   statement {
     sid    = "SQSReadOnly"

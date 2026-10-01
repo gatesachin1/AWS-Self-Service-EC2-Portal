@@ -5,7 +5,7 @@ const CATEGORIES = [
   {
     key: 'compute',
     label: 'Compute',
-    color: 'text-orange-400',
+    color: 'text-orange-500 dark:text-orange-400',
     icon: <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" />,
     items: [
       { to: '/manage-instances', label: 'EC2', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" /> },
@@ -17,7 +17,7 @@ const CATEGORIES = [
   {
     key: 'storage',
     label: 'Storage',
-    color: 'text-green-400',
+    color: 'text-green-500 dark:text-green-400',
     icon: <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 10V11" />,
     items: [
       { to: '/s3', label: 'S3 Buckets', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 10V11" /> },
@@ -26,7 +26,7 @@ const CATEGORIES = [
   {
     key: 'database',
     label: 'Database',
-    color: 'text-blue-400',
+    color: 'text-blue-500 dark:text-blue-400',
     icon: <path strokeLinecap="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />,
     items: [
       { to: '/rds',      label: 'RDS',      icon: <><ellipse cx="12" cy="5" rx="9" ry="3" /><path strokeLinecap="round" d="M21 12c0 1.657-4.03 3-9 3s-9-1.343-9-3" /><path strokeLinecap="round" d="M3 5v14c0 1.657 4.03 3 9 3s9-1.343 9-3V5" /></> },
@@ -36,7 +36,7 @@ const CATEGORIES = [
   {
     key: 'networking',
     label: 'Networking',
-    color: 'text-sky-400',
+    color: 'text-sky-500 dark:text-sky-400',
     icon: <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9" />,
     items: [
       { to: '/vpc',            label: 'VPC',          icon: <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9" /> },
@@ -48,7 +48,7 @@ const CATEGORIES = [
   {
     key: 'devtools',
     label: 'Developer Tools',
-    color: 'text-violet-400',
+    color: 'text-violet-500 dark:text-violet-400',
     icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9" />,
     items: [
       { to: '/developer-tools', label: 'CodePipeline',  icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18" /> },
@@ -60,7 +60,7 @@ const CATEGORIES = [
   {
     key: 'security',
     label: 'Security',
-    color: 'text-red-400',
+    color: 'text-red-500 dark:text-red-400',
     icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />,
     items: [
       { to: '/iam', label: 'IAM', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /> },
@@ -69,20 +69,30 @@ const CATEGORIES = [
   {
     key: 'management',
     label: 'Management',
-    color: 'text-pink-400',
+    color: 'text-pink-500 dark:text-pink-400',
     icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />,
     items: [
       { to: '/cloudwatch', label: 'CloudWatch', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /> },
+      { to: '/cloudtrail', label: 'CloudTrail', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /> },
     ],
   },
   {
     key: 'messaging',
     label: 'Messaging',
-    color: 'text-amber-400',
+    color: 'text-amber-500 dark:text-amber-400',
     icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />,
     items: [
       { to: '/sqs', label: 'SQS', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /> },
       { to: '/sns', label: 'SNS', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /> },
+    ],
+  },
+  {
+    key: 'domains',
+    label: 'Domains & DNS',
+    color: 'text-fuchsia-500 dark:text-fuchsia-400',
+    icon: <><circle cx="12" cy="12" r="9" /><line x1="3" y1="12" x2="21" y2="12" /><path strokeLinecap="round" d="M12 3a15.3 15.3 0 014 9 15.3 15.3 0 01-4 9 15.3 15.3 0 01-4-9 15.3 15.3 0 014-9z" /></>,
+    items: [
+      { to: '/domains',  label: 'Domains & SSL', icon: <><circle cx="12" cy="12" r="9" /><line x1="3" y1="12" x2="21" y2="12" /><path strokeLinecap="round" d="M12 3a15.3 15.3 0 014 9 15.3 15.3 0 01-4 9 15.3 15.3 0 01-4-9 15.3 15.3 0 014-9z" /></> },
     ],
   },
 ]
@@ -124,18 +134,18 @@ export default function Sidebar({ collapsed }) {
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-30 flex flex-col bg-aws-squid border-r border-aws-squid-lt transition-all duration-300 ${collapsed ? 'w-16' : 'w-60'}`}
+      className={`fixed inset-y-0 left-0 z-30 flex flex-col bg-white dark:bg-aws-squid border-r border-gray-100 dark:border-aws-squid-lt transition-all duration-300 ${collapsed ? 'w-16' : 'w-60'}`}
     >
       {/* Brand */}
-      <div className="flex items-center gap-2.5 h-14 px-4 border-b border-aws-squid-lt flex-shrink-0">
-        <div className="w-7 h-7 rounded-md bg-aws-orange flex items-center justify-center flex-shrink-0">
+      <div className="flex items-center gap-2.5 h-14 px-4 border-b border-gray-100 dark:border-aws-squid-lt flex-shrink-0">
+        <div className="w-7 h-7 rounded-xl bg-aws-orange flex items-center justify-center flex-shrink-0">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
             <rect x="2" y="3" width="20" height="7" rx="1" /><rect x="2" y="14" width="20" height="7" rx="1" />
           </svg>
         </div>
         {!collapsed && (
           <div className="leading-tight">
-            <p className="text-white font-semibold text-xs">AWS Cloud</p>
+            <p className="text-gray-900 dark:text-white font-semibold text-xs">Cloud Infra</p>
             <p className="text-aws-orange font-bold text-xs">Console Portal</p>
           </div>
         )}
@@ -154,6 +164,20 @@ export default function Sidebar({ collapsed }) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
           </Icon>
           {!collapsed && <span>Dashboard</span>}
+        </NavLink>
+
+        {/* Analytics */}
+        <NavLink
+          to="/analytics"
+          className={({ isActive }) =>
+            `sidebar-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-center px-0' : ''}`
+          }
+          title={collapsed ? 'Analytics' : undefined}
+        >
+          <Icon>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </Icon>
+          {!collapsed && <span>Analytics</span>}
         </NavLink>
 
         {/* Create Instance */}
@@ -186,7 +210,7 @@ export default function Sidebar({ collapsed }) {
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-semibold uppercase tracking-widest transition-colors ${
                     isActive
                       ? 'text-aws-orange'
-                      : 'text-gray-500 hover:text-gray-300'
+                      : 'text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                   }`}
                 >
                   <Icon>
@@ -236,11 +260,11 @@ export default function Sidebar({ collapsed }) {
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-3 border-t border-aws-squid-lt">
+      <div className="px-4 py-3 border-t border-gray-100 dark:border-aws-squid-lt">
         {!collapsed ? (
           <div className="flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-            <p className="text-[10px] text-gray-500">us-east-1 · 20 services</p>
+            <p className="text-[10px] text-gray-400 dark:text-gray-500">us-east-1 · 22 services</p>
           </div>
         ) : (
           <div className="w-2 h-2 rounded-full bg-green-400 mx-auto" />

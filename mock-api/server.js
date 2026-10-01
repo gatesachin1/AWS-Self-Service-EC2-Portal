@@ -7,8 +7,9 @@ import {
   S3_BUCKETS, VPCS, SUBNETS, SECURITY_GROUPS, LOAD_BALANCERS, LAMBDA_FUNCTIONS,
   RDS_INSTANCES, DYNAMODB_TABLES, ECS_CLUSTERS, CLOUDFRONT_DISTRIBUTIONS,
   ROUTE53_ZONES, SQS_QUEUES, SNS_TOPICS, AUTO_SCALING_GROUPS,
-  IAM_USERS, IAM_ROLES, CW_ALARMS, CW_DASHBOARDS,
+  IAM_USERS, IAM_ROLES, CW_ALARMS, CW_DASHBOARDS, CLOUDTRAIL_EVENTS,
   CODEPIPELINES, CODEBUILD_PROJECTS, CODEDEPLOY_APPS, CODECOMMIT_REPOS, CODESTAR_CONNECTIONS,
+  DOMAINS, SSL_CERTIFICATES, DNS_RECORDS,
 } from '../frontend/src/data/servicesData.js'
 
 const MOCK_SERVICES = {
@@ -26,6 +27,8 @@ const MOCK_SERVICES = {
   vpc:         { vpcs: VPCS, subnets: SUBNETS, security_groups: SECURITY_GROUPS },
   iam:         { users: IAM_USERS, roles: IAM_ROLES },
   cloudwatch:  { alarms: CW_ALARMS, dashboards: CW_DASHBOARDS },
+  cloudtrail:  { items: CLOUDTRAIL_EVENTS,         count: CLOUDTRAIL_EVENTS.length },
+  domains:     { domains: DOMAINS, certificates: SSL_CERTIFICATES, dns_records: DNS_RECORDS },
   devtools:    {
     pipelines:    CODEPIPELINES,
     builds:       CODEBUILD_PROJECTS,
@@ -407,5 +410,5 @@ server.listen(PORT, () => {
   console.log('    DELETE /instances/{id}')
   console.log('    GET    /resources')
   console.log('    GET    /services/{s3|elb|lambda|rds|dynamodb|ecs|cloudfront|route53}')
-  console.log('    GET    /services/{sqs|sns|autoscaling|vpc|iam|cloudwatch|devtools}\n')
+  console.log('    GET    /services/{sqs|sns|autoscaling|vpc|iam|cloudwatch|cloudtrail|devtools}\n')
 })

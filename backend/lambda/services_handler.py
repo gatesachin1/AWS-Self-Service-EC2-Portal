@@ -47,6 +47,8 @@ def handle(service_name: str) -> dict:
         "route53":     _get_route53,
         "iam":         _get_iam,
         "cloudwatch":  _get_cloudwatch,
+        "cloudtrail":  _get_cloudtrail,
+        "domains":     _get_domains,
         "sqs":         _get_sqs,
         "sns":         _get_sns,
         "autoscaling": _get_autoscaling,
@@ -543,6 +545,134 @@ def _get_cloudwatch() -> dict:
             })
     except ClientError as exc:
         logger.warning("CW dashboards error: %s", exc.response["Error"]["Message"])
+
+    return success_response(result)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CloudTrail
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _get_cloudtrail() -> dict:
+    """Most recent account activity, newest first. The frontend polls this
+    endpoint on a short interval to approximate a real-time event feed —
+    CloudTrail itself has no push/streaming API, so polling lookup_events
+    is the practical option here."""
+    import json as _json
+
+    ct = _client("cloudtrail")
+    try:
+        resp = ct.lookup_events(MaxResults=50)
+        items = []
+        for e in resp.get("Events", []):
+            event_time = e.get("EventTime", "")
+            resources = e.get("Resources", [])
+            resource_name = resources[0].get("ResourceName", "—") if resources else "—"
+            resource_type = resources[0].get("ResourceType", "—") if resources else "—"
+
+            detail = {}
+            try:
+                detail = _json.loads(e.get("CloudTrailEvent", "{}"))
+            except ValueError:
+                pass
+
+            items.append({
+                "event_id":      e.get("EventId", "—"),
+                "event_time":    event_time.isoformat()[:19].replace("T", " ") if event_time else "—",
+                "event_name":    e.get("EventName", "—"),
+                "event_source":  e.get("EventSource", "—"),
+                "username":      e.get("Username", "—"),
+                "source_ip":     detail.get("sourceIPAddress", "—"),
+                "aws_region":    detail.get("awsRegion", _REGION),
+                "resource":      resource_name,
+                "resource_type": resource_type,
+                "access_key_id": detail.get("userIdentity", {}).get("accessKeyId", "—"),
+                "read_only":     "Yes" if detail.get("readOnly") else "No",
+                "status":        "AccessDenied" if detail.get("errorCode") == "AccessDenied"
+                                  else "Failed" if detail.get("errorCode")
+                                  else "Success",
+            })
+        return success_response({"items": items, "count": len(items)})
+    except ClientError as exc:
+        msg = exc.response["Error"]["Message"]
+        logger.error("CloudTrail error: %s", msg)
+        return error_response(msg, status_code=502)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Domains & DNS
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _get_domains() -> dict:
+    """Domain registrations (Route 53 Domains), DNS zone records (Route 53),
+    and TLS certificate inventory (ACM). Cloudflare-style edge analytics
+    (requests/bandwidth/threats) has no AWS equivalent and stays frontend-mock
+    until a Cloudflare API token is wired in — see DomainsPage.jsx."""
+    result: dict[str, list] = {"domains": [], "certificates": [], "dns_records": []}
+
+    # Route 53 registered domains
+    try:
+        r53d = _client("route53domains", region="us-east-1")
+        for d in r53d.list_domains().get("Domains", []):
+            expiry = d.get("Expiry", "")
+            result["domains"].append({
+                "domain":      d.get("DomainName", "—"),
+                "registrar":   "Route 53",
+                "status":      "Active",
+                "auto_renew":  "Yes" if d.get("AutoRenew") else "No",
+                "expires":     expiry.isoformat()[:10] if expiry else "—",
+                "nameservers": "Route 53",
+                "created":     "—",
+            })
+    except ClientError as exc:
+        logger.warning("Route53Domains error: %s", exc.response["Error"]["Message"])
+
+    # Route 53 hosted zones → DNS records
+    try:
+        r53 = _client("route53", region=None)
+        for z in r53.list_hosted_zones().get("HostedZones", []):
+            zone_name = z.get("Name", "—").rstrip(".")
+            try:
+                recs = r53.list_resource_record_sets(HostedZoneId=z["Id"]).get("ResourceRecordSets", [])
+                for rec in recs:
+                    values = ", ".join(rr.get("Value", "") for rr in rec.get("ResourceRecords", []))
+                    if not values:
+                        values = rec.get("AliasTarget", {}).get("DNSName", "—")
+                    result["dns_records"].append({
+                        "domain":  zone_name,
+                        "type":    rec.get("Type", "—"),
+                        "name":    rec.get("Name", "—").rstrip("."),
+                        "value":   values,
+                        "ttl":     str(rec.get("TTL", "Auto")),
+                        "proxied": "No",  # Route 53 has no proxy concept — Cloudflare-managed zones differ
+                    })
+            except ClientError:
+                pass
+    except ClientError as exc:
+        logger.warning("Route53 zones error: %s", exc.response["Error"]["Message"])
+
+    # ACM certificates → SSL inventory
+    try:
+        acm = _client("acm")
+        paginator = acm.get_paginator("list_certificates")
+        for page in paginator.paginate():
+            for c in page.get("CertificateSummaryList", []):
+                try:
+                    detail = acm.describe_certificate(CertificateArn=c["CertificateArn"])["Certificate"]
+                    expiry = detail.get("NotAfter", "")
+                    result["certificates"].append({
+                        "domain":     detail.get("DomainName", "—"),
+                        "issuer":     "Amazon",
+                        "type":       detail.get("Type", "—").replace("_", " ").title(),
+                        "status":     detail.get("Status", "—").replace("_", " ").title(),
+                        "expires":    expiry.isoformat()[:10] if expiry else "—",
+                        "auto_renew": "Yes" if detail.get("RenewalEligibility") == "ELIGIBLE" else "No",
+                        "in_use":     ", ".join(detail.get("InUseBy", [])) or "Not in use",
+                    })
+                except ClientError:
+                    pass
+    except ClientError as exc:
+        logger.warning("ACM error: %s", exc.response["Error"]["Message"])
 
     return success_response(result)
 

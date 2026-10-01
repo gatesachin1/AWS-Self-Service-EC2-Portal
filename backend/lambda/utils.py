@@ -10,12 +10,14 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+#: Only Content-Type belongs here. CORS itself is owned entirely by the HTTP
+#: API's `cors_configuration` (terraform/modules/api_gateway) — API Gateway
+#: injects Access-Control-* headers for every response, actual and preflight.
+#: If the Lambda also sets them, API Gateway appends rather than replaces,
+#: producing a response with duplicate Access-Control-Allow-Origin values
+#: (e.g. "*, https://xxx.cloudfront.net"), which browsers reject outright.
 CORS_HEADERS: dict[str, str] = {
     "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With",
-    "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
-    "Access-Control-Max-Age": "3600",
 }
 
 

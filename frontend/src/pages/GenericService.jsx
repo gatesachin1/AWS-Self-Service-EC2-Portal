@@ -193,7 +193,7 @@ export default function GenericService({ serviceKey: propKey }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <div className={`w-8 h-8 rounded-lg ${cfg.color} flex items-center justify-center text-white`}>
+        <div className={`w-8 h-8 rounded-xl ${cfg.color} flex items-center justify-center text-white`}>
           {cfg.icon}
         </div>
         <div>
