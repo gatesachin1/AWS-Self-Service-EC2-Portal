@@ -11,6 +11,7 @@ import CloudTrailPage from './pages/CloudTrailPage'
 import DeveloperToolsPage from './pages/DeveloperToolsPage'
 import AnalyticsPage from './pages/AnalyticsPage'
 import DomainsPage from './pages/DomainsPage'
+import BillingPage from './pages/BillingPage'
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
         {/* Core */}
         <Route path="dashboard"        element={<Dashboard />} />
         <Route path="analytics"        element={<AnalyticsPage />} />
+        <Route path="billing"          element={<BillingPage />} />
         <Route path="create-instance"  element={<CreateInstance />} />
         <Route path="manage-instances" element={<ManageInstances />} />
 

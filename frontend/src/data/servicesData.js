@@ -401,3 +401,97 @@ export const RESOURCE_HEALTH_TREND = [
   { week: 'W5', healthy: 95, warning: 4, critical: 1 },
   { week: 'W6', healthy: 93, warning: 6, critical: 1 },
 ]
+
+// ── Billing & Cost Management ──────────────────────────────────────────────────
+// Shaped like AWS Cost Explorer's get_cost_and_usage response (grouped by
+// SERVICE, monthly granularity) so the real backend handler (_get_billing,
+// Cost Explorer API) can return the same { months: [{ month, services, total }] }
+// shape without a translation layer — real AWS service names just flow
+// straight through to the UI instead of these short mock keys.
+export const BILLING_SERVICE_LABELS = {
+  EC2:          'Amazon Elastic Compute Cloud',
+  S3:           'Amazon Simple Storage Service',
+  RDS:          'Amazon Relational Database Service',
+  Lambda:       'AWS Lambda',
+  DynamoDB:     'Amazon DynamoDB',
+  CloudFront:   'Amazon CloudFront',
+  ELB:          'Elastic Load Balancing',
+  Route53:      'Amazon Route 53',
+  DataTransfer: 'Data Transfer',
+  Other:        'Other Services',
+}
+
+const BILLING_USAGE_TYPES = {
+  EC2:          [{ label: 'BoxUsage:t3.medium', pct: 0.35 }, { label: 'BoxUsage:m5.large', pct: 0.30 }, { label: 'EBS:VolumeUsage.gp3', pct: 0.20 }, { label: 'DataTransfer-Out-Bytes', pct: 0.15 }],
+  S3:           [{ label: 'TimedStorage-ByteHrs', pct: 0.55 }, { label: 'Requests-Tier1', pct: 0.25 }, { label: 'DataTransfer-Out-Bytes', pct: 0.20 }],
+  RDS:          [{ label: 'InstanceUsage:db.r6g.large', pct: 0.60 }, { label: 'RDS:GP3-Storage', pct: 0.25 }, { label: 'RDS:Multi-AZUsage', pct: 0.15 }],
+  Lambda:       [{ label: 'Lambda-GB-Second', pct: 0.65 }, { label: 'Lambda-Requests', pct: 0.35 }],
+  DynamoDB:     [{ label: 'ReadCapacityUnit-Hrs', pct: 0.45 }, { label: 'WriteCapacityUnit-Hrs', pct: 0.35 }, { label: 'TimedStorage-ByteHrs', pct: 0.20 }],
+  CloudFront:   [{ label: 'Requests-HTTPS', pct: 0.40 }, { label: 'DataTransfer-Out-Bytes', pct: 0.60 }],
+  ELB:          [{ label: 'LoadBalancerUsage', pct: 0.70 }, { label: 'LCUUsage', pct: 0.30 }],
+  Route53:      [{ label: 'HostedZone', pct: 0.30 }, { label: 'DNS-Queries', pct: 0.70 }],
+  DataTransfer: [{ label: 'DataTransfer-Regional-Bytes', pct: 1.0 }],
+  Other:        [{ label: 'Miscellaneous usage charges', pct: 1.0 }],
+}
+
+const BILLING_BASE_COST = { EC2: 1200, S3: 300, RDS: 520, Lambda: 95, DynamoDB: 140, CloudFront: 180, ELB: 110, Route53: 12, DataTransfer: 85, Other: 160 }
+
+function billingLineItems(serviceKey, amount) {
+  return (BILLING_USAGE_TYPES[serviceKey] || [{ label: 'Usage charges', pct: 1 }])
+    .map(u => ({ label: u.label, amount: +(amount * u.pct).toFixed(2) }))
+}
+
+export const BILLING_DATA = (() => {
+  const now = new Date()
+  const dayOfMonth = now.getDate()
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  const monthProgress = dayOfMonth / daysInMonth
+
+  const months = Array.from({ length: 12 }, (_, idx) => {
+    // idx is chronological position: 0 = 11 months ago (oldest) .. 11 = current month
+    const monthsAgo = 11 - idx
+    const d = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1)
+    const growth = 1 + (idx * 0.015)
+    const wobble = Math.sin(idx * 1.1) * 0.08
+    const isCurrent = monthsAgo === 0
+
+    const services = {}
+    let total = 0
+    for (const [key, base] of Object.entries(BILLING_BASE_COST)) {
+      let amount = base * growth * (1 + wobble + ((key.length % 3) * 0.02))
+      if (isCurrent) amount *= monthProgress
+      amount = +amount.toFixed(2)
+      services[key] = amount
+      total += amount
+    }
+
+    return {
+      key:   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+      label: d.toLocaleString('en-US', { month: 'short', year: 'numeric' }),
+      services,
+      total: +total.toFixed(2),
+      isCurrent,
+      forecastTotal: isCurrent ? +(total / monthProgress).toFixed(2) : null,
+    }
+  })
+
+  return months
+})()
+
+export function billingLineItemsFor(serviceKey, amount) {
+  return billingLineItems(serviceKey, amount)
+}
+
+// ── Instance health (EC2 status checks) ─────────────────────────────────────
+// Mirrors mock-api/server.js's instance list so IDs/names line up with
+// Manage Instances when running against the mock backend. Used as the seed
+// for Analytics' self-contained health simulation when no API is configured.
+export const INSTANCE_HEALTH_SEED = [
+  { instance_id: 'i-0a1b2c3d4e5f6a7b8', instance_name: 'web-server-prod-01',    state: 'running' },
+  { instance_id: 'i-1b2c3d4e5f6a7b8c9', instance_name: 'api-server-prod-01',    state: 'running' },
+  { instance_id: 'i-2c3d4e5f6a7b8c9d0', instance_name: 'db-server-prod-01',     state: 'stopped' },
+  { instance_id: 'i-3d4e5f6a7b8c9d0e1', instance_name: 'web-server-staging-01', state: 'running' },
+  { instance_id: 'i-4e5f6a7b8c9d0e1f2', instance_name: 'bastion-host-01',       state: 'running' },
+  { instance_id: 'i-5f6a7b8c9d0e1f2a3', instance_name: 'dev-workstation-01',    state: 'stopped' },
+  { instance_id: 'i-7b8c9d0e1f2a3b4c5', instance_name: 'analytics-server-01',   state: 'running' },
+]

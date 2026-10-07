@@ -45,6 +45,9 @@ client.interceptors.response.use(
 export const listInstances = () =>
   client.get('/instances').then((r) => r.data)
 
+export const getInstanceHealth = () =>
+  client.get('/instances/health').then((r) => r.data)
+
 export const createInstance = (payload) =>
   client.post('/instances', payload).then((r) => r.data)
 

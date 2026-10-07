@@ -180,6 +180,20 @@ export default function Sidebar({ collapsed }) {
           {!collapsed && <span>Analytics</span>}
         </NavLink>
 
+        {/* Billing */}
+        <NavLink
+          to="/billing"
+          className={({ isActive }) =>
+            `sidebar-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-center px-0' : ''}`
+          }
+          title={collapsed ? 'Billing' : undefined}
+        >
+          <Icon>
+            <circle cx="12" cy="12" r="9" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 7v10m-3-7.5c0-1.38 1.34-2.5 3-2.5s3 1.12 3 2.5-1.34 2.5-3 2.5-3 1.12-3 2.5 1.34 2.5 3 2.5 3-1.12 3-2.5" />
+          </Icon>
+          {!collapsed && <span>Billing</span>}
+        </NavLink>
+
         {/* Create Instance */}
         <NavLink
           to="/create-instance"
@@ -264,7 +278,7 @@ export default function Sidebar({ collapsed }) {
         {!collapsed ? (
           <div className="flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-            <p className="text-[10px] text-gray-400 dark:text-gray-500">us-east-1 · 22 services</p>
+            <p className="text-[10px] text-gray-400 dark:text-gray-500">us-east-1 · 23 services</p>
           </div>
         ) : (
           <div className="w-2 h-2 rounded-full bg-green-400 mx-auto" />

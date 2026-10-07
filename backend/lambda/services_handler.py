@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import os
+from datetime import date, timedelta
 from typing import Any
 
 import boto3
@@ -49,6 +50,7 @@ def handle(service_name: str) -> dict:
         "cloudwatch":  _get_cloudwatch,
         "cloudtrail":  _get_cloudtrail,
         "domains":     _get_domains,
+        "billing":     _get_billing,
         "sqs":         _get_sqs,
         "sns":         _get_sns,
         "autoscaling": _get_autoscaling,
@@ -675,6 +677,64 @@ def _get_domains() -> dict:
         logger.warning("ACM error: %s", exc.response["Error"]["Message"])
 
     return success_response(result)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Billing & Cost Management
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _get_billing() -> dict:
+    """Trailing 13 months of cost grouped by service, via Cost Explorer.
+    Cost Explorer is a single global service always queried from us-east-1
+    regardless of AWS_REGION, and the account must have Cost Explorer enabled
+    (Billing console → Cost Explorer → Enable) or this call fails with
+    DataUnavailableException. Shape matches the frontend's mock data exactly —
+    real AWS service names flow straight through with no translation layer."""
+    ce = _client("ce", region="us-east-1")
+    try:
+        today = date.today()
+        start = (today.replace(day=1) - timedelta(days=365)).replace(day=1)
+        resp = ce.get_cost_and_usage(
+            TimePeriod={"Start": start.isoformat(), "End": today.isoformat()},
+            Granularity="MONTHLY",
+            Metrics=["UnblendedCost"],
+            GroupBy=[{"Type": "DIMENSION", "Key": "SERVICE"}],
+        )
+
+        months = []
+        for period in resp.get("ResultsByTime", []):
+            month_start = period["TimePeriod"]["Start"]  # "YYYY-MM-DD"
+            services: dict[str, float] = {}
+            total = 0.0
+            for group in period.get("Groups", []):
+                svc = group["Keys"][0]
+                amount = float(group["Metrics"]["UnblendedCost"]["Amount"])
+                if amount <= 0:
+                    continue
+                services[svc] = round(amount, 2)
+                total += amount
+
+            month_dt = date.fromisoformat(month_start)
+            is_current = month_dt.year == today.year and month_dt.month == today.month
+            day_of_month = today.day if is_current else None
+            forecast_total = None
+            if is_current and day_of_month:
+                forecast_total = round(total / day_of_month * 31, 2)  # rough same-shape estimate
+
+            months.append({
+                "key":            month_start[:7],
+                "label":          month_dt.strftime("%b %Y"),
+                "services":       services,
+                "total":          round(total, 2),
+                "isCurrent":      is_current,
+                "forecastTotal":  forecast_total,
+            })
+
+        return success_response({"months": months})
+    except ClientError as exc:
+        msg = exc.response["Error"]["Message"]
+        logger.error("Cost Explorer error: %s", msg)
+        return error_response(msg, status_code=502)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

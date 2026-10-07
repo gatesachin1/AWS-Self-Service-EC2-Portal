@@ -9,7 +9,7 @@ import {
   ROUTE53_ZONES, SQS_QUEUES, SNS_TOPICS, AUTO_SCALING_GROUPS,
   IAM_USERS, IAM_ROLES, CW_ALARMS, CW_DASHBOARDS, CLOUDTRAIL_EVENTS,
   CODEPIPELINES, CODEBUILD_PROJECTS, CODEDEPLOY_APPS, CODECOMMIT_REPOS, CODESTAR_CONNECTIONS,
-  DOMAINS, SSL_CERTIFICATES, DNS_RECORDS,
+  DOMAINS, SSL_CERTIFICATES, DNS_RECORDS, BILLING_DATA,
 } from '../frontend/src/data/servicesData.js'
 
 const MOCK_SERVICES = {
@@ -29,6 +29,7 @@ const MOCK_SERVICES = {
   cloudwatch:  { alarms: CW_ALARMS, dashboards: CW_DASHBOARDS },
   cloudtrail:  { items: CLOUDTRAIL_EVENTS,         count: CLOUDTRAIL_EVENTS.length },
   domains:     { domains: DOMAINS, certificates: SSL_CERTIFICATES, dns_records: DNS_RECORDS },
+  billing:     { months: BILLING_DATA },
   devtools:    {
     pipelines:    CODEPIPELINES,
     builds:       CODEBUILD_PROJECTS,
@@ -255,6 +256,33 @@ function handleGetInstances(req, res) {
   send(res, 200, { instances, count: instances.length })
 }
 
+function handleGetInstanceHealth(req, res) {
+  const checkedAt = new Date().toISOString()
+  const items = instances
+    .filter((i) => i.state !== 'terminated')
+    .map((i) => {
+      const running = i.state === 'running'
+      // Occasionally simulate a blip on a running instance so the health
+      // widget has something to show besides "everything is always ok".
+      const impaired = running && Math.random() < 0.06
+      const systemStatus   = !running ? 'not-applicable' : impaired ? 'impaired' : 'ok'
+      const instanceStatus = !running ? 'not-applicable' : (impaired && Math.random() < 0.5) ? 'impaired' : 'ok'
+      const health = !running ? 'stopped'
+        : (systemStatus === 'ok' && instanceStatus === 'ok') ? 'healthy'
+        : (systemStatus === 'impaired' || instanceStatus === 'impaired') ? 'unhealthy'
+        : 'degraded'
+      return {
+        instance_id: i.instance_id,
+        state: i.state,
+        system_status: systemStatus,
+        instance_status: instanceStatus,
+        health,
+        checked_at: checkedAt,
+      }
+    })
+  send(res, 200, { items, count: items.length, checked_at: checkedAt })
+}
+
 async function handleCreateInstance(req, res) {
   const body = await readBody(req)
 
@@ -370,6 +398,9 @@ const server = http.createServer(async (req, res) => {
   // GET /instances
   if (method === 'GET' && rawPath === '/instances') return handleGetInstances(req, res)
 
+  // GET /instances/health
+  if (method === 'GET' && rawPath === '/instances/health') return handleGetInstanceHealth(req, res)
+
   // POST /instances
   if (method === 'POST' && rawPath === '/instances') return handleCreateInstance(req, res)
 
@@ -405,6 +436,7 @@ server.listen(PORT, () => {
   console.log(`\n  Mock API running at http://localhost:${PORT}`)
   console.log('  Routes:')
   console.log('    GET    /instances')
+  console.log('    GET    /instances/health')
   console.log('    POST   /instances')
   console.log('    POST   /instances/start|stop|reboot')
   console.log('    DELETE /instances/{id}')

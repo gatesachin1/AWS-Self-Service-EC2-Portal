@@ -9,6 +9,7 @@ import json
 import logging
 import os
 import time
+from datetime import datetime, timezone
 from typing import Any
 
 import boto3
@@ -53,6 +54,9 @@ def lambda_handler(event: dict, context: Any) -> dict:
     try:
         if route_key == "GET /instances":
             result = _list_instances()
+
+        elif route_key == "GET /instances/health":
+            result = _get_instance_health()
 
         elif route_key == "POST /instances":
             body = _parse_body(event)
@@ -145,6 +149,51 @@ def _list_instances() -> dict:
         code = exc.response["Error"]["Code"]
         msg  = exc.response["Error"]["Message"]
         logger.error("ClientError [%s] listing instances: %s", code, msg)
+        return error_response(msg, status_code=502)
+
+
+def _get_instance_health() -> dict:
+    """GET /instances/health — EC2 System + Instance status checks.
+    Polled by the frontend every 60s to match the real ~1-minute cadence
+    these checks refresh on. Stopped instances report 'not-applicable' for
+    both checks — that's expected AWS behavior, not a failure."""
+    logger.info("Fetching EC2 instance status checks")
+    try:
+        paginator = ec2.get_paginator("describe_instance_status")
+        pages = paginator.paginate(IncludeAllInstances=True)
+
+        checked_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        items: list[dict] = []
+        for page in pages:
+            for s in page.get("InstanceStatuses", []):
+                system_status   = s.get("SystemStatus", {}).get("Status", "not-applicable")
+                instance_status = s.get("InstanceStatus", {}).get("Status", "not-applicable")
+                state = s.get("InstanceState", {}).get("Name", "unknown")
+
+                if state != "running":
+                    health = "stopped"
+                elif system_status == "ok" and instance_status == "ok":
+                    health = "healthy"
+                elif "impaired" in (system_status, instance_status):
+                    health = "unhealthy"
+                else:
+                    health = "degraded"
+
+                items.append({
+                    "instance_id":      s.get("InstanceId", ""),
+                    "state":            state,
+                    "system_status":    system_status,
+                    "instance_status":  instance_status,
+                    "health":           health,
+                    "checked_at":       checked_at,
+                })
+
+        return success_response({"items": items, "count": len(items), "checked_at": checked_at})
+
+    except ClientError as exc:
+        code = exc.response["Error"]["Code"]
+        msg  = exc.response["Error"]["Message"]
+        logger.error("ClientError [%s] fetching instance status: %s", code, msg)
         return error_response(msg, status_code=502)
 
 

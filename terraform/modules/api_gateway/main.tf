@@ -54,6 +54,7 @@ resource "aws_apigatewayv2_integration" "lambda" {
 locals {
   routes = toset([
     "GET /instances",
+    "GET /instances/health",
     "POST /instances",
     "POST /instances/start",
     "POST /instances/stop",

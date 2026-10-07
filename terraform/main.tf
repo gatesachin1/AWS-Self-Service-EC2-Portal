@@ -50,6 +50,11 @@ module "frontend" {
 }
 
 # ── API Gateway HTTP API ──────────────────────────────────────────────────
+# CORS origins come from var.allowed_origins rather than referencing
+# module.frontend directly, so the API Gateway + Lambda stack can be deployed
+# (or -target'd) independently of the S3/CloudFront frontend module — e.g.
+# for local development against a real backend. Once you deploy the frontend
+# module, add its CloudFront domain to allowed_origins in terraform.tfvars.
 module "api_gateway" {
   source = "./modules/api_gateway"
 
@@ -57,7 +62,7 @@ module "api_gateway" {
   lambda_invoke_arn        = module.lambda.invoke_arn
   lambda_function_arn      = module.lambda.function_arn
   lambda_function_name     = module.lambda.function_name
-  allowed_origins          = ["https://${module.frontend.cloudfront_domain_name}", "http://localhost:3001"]
+  allowed_origins          = var.allowed_origins
   access_log_group_arn     = module.cloudwatch.api_access_log_group_arn
   throttling_burst_limit   = var.throttling_burst_limit
   throttling_rate_limit    = var.throttling_rate_limit

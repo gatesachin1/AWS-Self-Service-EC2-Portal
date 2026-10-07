@@ -1,6 +1,6 @@
 # AWS Cloud Console Portal
 
-A production-ready self-service portal for launching, managing, and monitoring resources across **22 AWS services** — built on a fully serverless stack and deployed in one command.
+A production-ready self-service portal for launching, managing, and monitoring resources across **23 AWS services** — built on a fully serverless stack and deployed in one command.
 
 ---
 
@@ -9,7 +9,7 @@ A production-ready self-service portal for launching, managing, and monitoring r
 | Capability | Details |
 |---|---|
 | **EC2 self-service** | Launch instances (AMI, type, subnet, SG, key pair, IAM profile, volume), start / stop / reboot / terminate |
-| **Live service inventory** | View real AWS resources across 22 services — fetched live from your account via Lambda + boto3 |
+| **Live service inventory** | View real AWS resources across 23 services — fetched live from your account via Lambda + boto3 |
 | **Mock fallback** | When no API URL is configured, every page shows realistic mock data instantly (zero AWS required for local dev) |
 | **One-command deploy** | `.\deploy.ps1` runs Terraform, builds the frontend, uploads to S3, and invalidates CloudFront |
 
@@ -232,7 +232,7 @@ aws cloudfront create-invalidation --distribution-id <id> --paths "/*"
 │   │   │   ├── layout/           Layout, Sidebar (collapsible, 8 categories), TopBar
 │   │   │   └── ui/               Badge, ConfirmModal, ErrorBanner, ServiceTable, Spinner, StatsCard
 │   │   └── data/
-│   │       └── servicesData.js   Mock data for all 22 services (used when no API URL set)
+│   │       └── servicesData.js   Mock data for all 23 services (used when no API URL set)
 │   ├── .env.example
 │   └── vite.config.js
 │
@@ -245,7 +245,7 @@ aws cloudfront create-invalidation --distribution-id <id> --paths "/*"
 │       ├── api_gateway/          HTTP API v2, routes, Lambda integration, CORS, throttling
 │       ├── cloudwatch/           Log groups (Lambda + API Gateway access logs)
 │       ├── frontend/             S3 bucket (private) + CloudFront (OAC/sigv4, SPA routing)
-│       ├── iam/                  Lambda execution role — EC2 ops + read-only for 22 services
+│       ├── iam/                  Lambda execution role — EC2 ops + read-only for 23 services
 │       └── lambda/               Lambda function, X-Ray tracing
 │
 ├── mock-api/

@@ -2,8 +2,10 @@ aws_region   = "us-east-1"
 project_name = "ecc-portal"
 environment  = "dev"
 
-# CORS — will be locked to CloudFront domain after first apply
-allowed_origins = ["*"]
+# CORS — scoped to the local frontend dev server for now (backend-only deploy).
+# Add your CloudFront domain here too once you deploy the frontend module,
+# e.g. ["http://localhost:3001", "https://xxxxxxxxxx.cloudfront.net"]
+allowed_origins = ["http://localhost:3001"]
 
 lambda_memory_mb        = 256
 lambda_timeout_seconds  = 30

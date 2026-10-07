@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Cell, Legend, BarChart, Bar,
@@ -8,6 +9,8 @@ import {
   LOAD_BALANCERS, CLOUDFRONT_DISTRIBUTIONS, SQS_QUEUES, SNS_TOPICS, AUTO_SCALING_GROUPS,
   CW_ALARMS, DOMAINS,
 } from '../data/servicesData'
+import { useInstanceHealth } from '../hooks/useInstanceHealth'
+import Spinner from '../components/ui/Spinner'
 
 const COST_COLORS = {
   EC2:    '#4F6EF7',
@@ -63,6 +66,124 @@ function CustomTooltip({ active, payload, label }) {
   )
 }
 
+const HEALTH_STYLE = {
+  healthy:   { dot: 'bg-green-500',  badge: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',   label: 'Healthy' },
+  degraded:  { dot: 'bg-amber-500',  badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',   label: 'Degraded' },
+  unhealthy: { dot: 'bg-red-500',    badge: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',          label: 'Unhealthy' },
+  stopped:   { dot: 'bg-gray-400',   badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',          label: 'Stopped' },
+}
+
+function timeAgo(date) {
+  if (!date) return '—'
+  const secs = Math.max(0, Math.round((Date.now() - date.getTime()) / 1000))
+  if (secs < 5) return 'just now'
+  if (secs < 60) return `${secs}s ago`
+  return `${Math.round(secs / 60)}m ago`
+}
+
+function HealthDotStrip({ history = [] }) {
+  const padded = Array(15 - history.length).fill(null).concat(history)
+  return (
+    <div className="flex items-center gap-0.5">
+      {padded.map((h, i) => (
+        <span
+          key={i}
+          className={`w-1.5 h-4 rounded-sm ${h ? HEALTH_STYLE[h]?.dot ?? 'bg-gray-200 dark:bg-gray-700' : 'bg-gray-100 dark:bg-gray-800'}`}
+          title={h ? HEALTH_STYLE[h]?.label : 'No data yet'}
+        />
+      ))}
+    </div>
+  )
+}
+
+function InstanceHealthSection() {
+  const { instances, history, checkedAt, loading, error, hasApi } = useInstanceHealth()
+  const [, forceTick] = useState(0)
+
+  // Re-render every second just to keep the "Xs ago" label live.
+  useEffect(() => {
+    const id = setInterval(() => forceTick(n => n + 1), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  const counts = instances.reduce((acc, i) => {
+    acc[i.health] = (acc[i.health] || 0) + 1
+    return acc
+  }, {})
+
+  return (
+    <div className="aws-card overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-100 dark:border-aws-border flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Instance Health</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            EC2 system + instance status checks — refreshes every {hasApi ? '60s' : '15s'}
+            {!hasApi && ' (simulated)'}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 text-xs">
+            {Object.entries(HEALTH_STYLE).map(([key, s]) => (
+              counts[key] ? (
+                <span key={key} className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                  <span className={`w-2 h-2 rounded-full ${s.dot}`} />{counts[key]} {s.label.toLowerCase()}
+                </span>
+              ) : null
+            ))}
+          </div>
+          <span className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            {loading ? 'loading…' : `checked ${timeAgo(checkedAt)}`}
+          </span>
+        </div>
+      </div>
+
+      {error && (
+        <div className="px-5 py-2.5 bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800 text-xs text-yellow-800 dark:text-yellow-300">
+          Could not load live status checks — showing simulated data. ({error})
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex justify-center py-14"><Spinner /></div>
+      ) : (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-200 dark:border-aws-border bg-gray-50 dark:bg-aws-navy">
+              <th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Instance</th>
+              <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">System</th>
+              <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Instance</th>
+              <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Health</th>
+              <th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Last {15} checks</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 dark:divide-aws-border">
+            {instances.length === 0 ? (
+              <tr><td colSpan={5} className="px-5 py-10 text-center text-sm text-gray-400 dark:text-gray-500">No instances found.</td></tr>
+            ) : instances.map((i) => {
+              const style = HEALTH_STYLE[i.health] || HEALTH_STYLE.stopped
+              return (
+                <tr key={i.instance_id} className="hover:bg-gray-50 dark:hover:bg-aws-navy-lt transition-colors">
+                  <td className="px-5 py-2.5">
+                    <p className="font-medium text-gray-900 dark:text-white">{i.instance_name || i.instance_id}</p>
+                    <p className="font-mono text-[11px] text-gray-400 dark:text-gray-500">{i.instance_id}</p>
+                  </td>
+                  <td className="px-3 py-2.5 text-xs text-gray-600 dark:text-gray-300 capitalize">{i.system_status}</td>
+                  <td className="px-3 py-2.5 text-xs text-gray-600 dark:text-gray-300 capitalize">{i.instance_status}</td>
+                  <td className="px-3 py-2.5">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${style.badge}`}>{style.label}</span>
+                  </td>
+                  <td className="px-5 py-2.5"><HealthDotStrip history={history[i.instance_id]} /></td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      )}
+    </div>
+  )
+}
+
 export default function AnalyticsPage() {
   return (
     <div className="space-y-5">
@@ -80,6 +201,8 @@ export default function AnalyticsPage() {
           subClass={ACTIVE_ALARMS > 0 ? 'text-red-500' : 'text-green-500'} />
         <StatTile label="Domains Tracked" value={DOMAINS.length} sub="See Domains & DNS" />
       </div>
+
+      <InstanceHealthSection />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         {/* Cost trend */}

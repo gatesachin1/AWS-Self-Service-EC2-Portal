@@ -238,6 +238,16 @@ data "aws_iam_policy_document" "services_read" {
     resources = ["*"]
   }
 
+  # Billing & Cost Management (Cost Explorer)
+  statement {
+    sid    = "CostExplorerReadOnly"
+    effect = "Allow"
+    actions = [
+      "ce:GetCostAndUsage",
+    ]
+    resources = ["*"]
+  }
+
   # SQS
   statement {
     sid    = "SQSReadOnly"
